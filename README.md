@@ -5,7 +5,8 @@ A skill for Claude that teaches physics and engineering from first principles, t
 - **Lessons are derived, not asserted.** Each one starts from the governing laws, relies only on earlier lessons, uses no loose analogies, computes real numbers in its interactives, and cites standard university textbooks by section.
 - **You learn in your own artifact.** One page per field, one tab per lesson, 10 to 15 minutes each.
 - **A lesson is written once.** If the database has it, Claude assembles it for you from the stored file. If not, Claude writes it to the same standard and can offer it back to the database for review.
-nRead the lessons without Claude at **https://qaziuzi.github.io/feynmen/**.
+
+Read the lessons without Claude at **https://qaziuzi.github.io/feynmen/**.
 
 Fields so far: electronics, power electronics, analog design, chip making, robotics, astrophysics, rockets, automobiles, mathematics, how AI works.
 
