@@ -1,334 +1,170 @@
 #!/usr/bin/env node
-// Learning Database tool. No dependencies. The database it works on is the skill folder this script sits in.
+// Learning Database: the learner's own cards. No dependencies.
+// Data lives in $LEARNING_DB_HOME (default ~/.learning-database): cards/<id>.md, state.json, build/.
 //
-//   node ld.mjs status [field]             fields, lessons written, the user's progress
-//   node ld.mjs find <words...>            search concepts by title and keywords
-//   node ld.mjs chain <conceptId>          prerequisite chain for a concept, in learning order
-//   node ld.mjs next <field>               the next lesson for this user in a field
-//   node ld.mjs build <field|home|all> [--out DIR] [--start lN]
-//   node ld.mjs site --out DIR             static website of every field (GitHub Pages)
-//   node ld.mjs done <conceptId...>        record lessons the user finished
-//   node ld.mjs artifact <field|home> <url>  remember the user's artifact link for a field
-//   node ld.mjs check                      validate the graph and lesson files
-//
-// Personal state (artifact links, progress) lives outside the database, in
-// $LEARNING_DB_HOME/user.json (default ~/.learning-database/user.json).
+//   status | list [field] | find <words> | save <card.md> | due | reviewed <id> ok|again
+//   notebook [--out DIR] [--cards DIR] | artifact <url>
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const skill = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const argv = process.argv.slice(2);
-const cmd = argv[0];
-const opts = {}; const args = [];
-for (let i = 1; i < argv.length; i++) {
-  if (argv[i].startsWith('--')) { opts[argv[i].slice(2)] = argv[i + 1]; i++; } else args.push(argv[i]);
-}
+const argv = process.argv.slice(2), cmd = argv[0], opts = {}, args = [];
+for (let i = 1; i < argv.length; i++) { if (argv[i].startsWith('--')) opts[argv[i].slice(2)] = argv[++i]; else args.push(argv[i]); }
 
 const home = process.env.LEARNING_DB_HOME || path.join(os.homedir(), '.learning-database');
-const statePath = opts.state ? path.resolve(opts.state) : path.join(home, 'user.json');
-const outDir = opts.out ? path.resolve(opts.out) : path.join(home, 'build');
-
-const read = (p) => fs.readFileSync(path.join(skill, p), 'utf8');
-const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const fill = (tpl, map) => tpl.replace(/%%([A-Z_]+)%%/g, (m, k) => (k in map ? String(map[k]) : m));
-const writeOut = (p, s) => { const f = path.join(outDir, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, s); return f; };
-
-const graph = JSON.parse(read('db/graph.json'));
-const trackOf = (id) => graph.tracks.find((t) => t.id === id);
-const conceptOf = (id) => graph.concepts.find((c) => c.id === id);
-const conceptsIn = (trackId) => graph.concepts.filter((c) => c.track === trackId).sort((a, b) => a.n - b.n);
+const cardsDir = opts.cards ? path.resolve(opts.cards) : path.join(home, 'cards');
+const statePath = path.join(home, 'state.json');
+const STEPS = [1, 3, 7, 21, 60];
+const today = () => new Date().toISOString().slice(0, 10);
+const addDays = (d, n) => { const t = new Date(d + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
 
 function loadState() {
   let s = {};
-  try { s = JSON.parse(fs.readFileSync(statePath, 'utf8')); } catch (e) { /* no state yet */ }
-  return { artifacts: s.artifacts || {}, progress: s.progress || {} };
+  try { s = JSON.parse(fs.readFileSync(statePath, 'utf8')); } catch (e) {
+    try { const old = JSON.parse(fs.readFileSync(path.join(home, 'user.json'), 'utf8')); s.notebook = old.artifacts && old.artifacts.home; } catch (e2) {}
+  }
+  return { notebook: s.notebook || null, reviews: s.reviews || {} };
 }
-function saveState(s) { fs.mkdirSync(path.dirname(statePath), { recursive: true }); fs.writeFileSync(statePath, JSON.stringify(s, null, 2) + '\n'); }
+function saveState() { fs.mkdirSync(home, { recursive: true }); fs.writeFileSync(statePath, JSON.stringify(state, null, 2) + '\n'); }
 const state = loadState();
 
-// ---- lessons on disk: a concept is "written" when a lesson file carries its id ----
-const lessonCache = {};
-function lessonsIn(trackId) {
-  if (lessonCache[trackId]) return lessonCache[trackId];
-  const dir = path.join(skill, 'db/lessons', trackId);
-  const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => /^\d+.*\.html$/.test(f)).sort() : [];
-  const out = files.map((f) => {
-    const src = fs.readFileSync(path.join(dir, f), 'utf8');
-    const m = src.match(/^\s*<!--lesson\s+(\{[\s\S]*?\})\s*-->/);
-    if (!m) throw new Error(`${trackId}/${f}: missing <!--lesson {...}--> meta comment`);
-    return { ...JSON.parse(m[1]), file: f, body: src.slice(m[0].length) };
-  }).sort((a, b) => a.n - b.n);
-  return (lessonCache[trackId] = out);
+// ---- card files ----
+function parseCard(src, file) {
+  const m = src.replace(/\r\n/g, '\n').match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  if (!m) throw new Error(`${file}: must start with a --- front matter block`);
+  const meta = {};
+  for (const line of m[1].split('\n')) { const k = line.match(/^([a-z_]+):\s*(.*)$/); if (k) meta[k[1]] = k[2].trim(); }
+  const [text, widget = ''] = m[2].split(/\n?<!-- widget -->\n?/);
+  const list = (v) => (v || '').split(',').map((x) => x.trim()).filter(Boolean);
+  const card = { ...meta, builds_on: list(meta.builds_on), leads_to: list(meta.leads_to), text: text.trim(), widget: widget.trim() };
+  for (const k of ['id', 'title', 'field', 'recall']) if (!card[k]) throw new Error(`${file}: front matter needs "${k}"`);
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(card.id)) throw new Error(`${file}: id must be lowercase letters, digits and hyphens`);
+  if (!card.widget) throw new Error(`${file}: no "<!-- widget -->" section`);
+  return card;
 }
-const written = (c) => lessonsIn(c.track).some((l) => l.id === c.id);
-const done = (c) => Boolean(state.progress[c.id]);
-const tag = (c) => `${trackOf(c.track).name} ${c.n}`;
-
-// Prerequisites of a concept in learning order (depth-first, each once), ending with the concept itself.
-function chain(id, seen = new Set(), out = []) {
-  const c = conceptOf(id);
-  if (!c) throw new Error('Unknown concept: ' + id);
-  if (seen.has(id)) return out;
-  seen.add(id);
-  for (const p of c.prereqs || []) chain(p, seen, out);
-  out.push(c);
-  return out;
+function cards() {
+  if (!fs.existsSync(cardsDir)) return [];
+  return fs.readdirSync(cardsDir).filter((f) => f.endsWith('.md')).map((f) => {
+    const c = parseCard(fs.readFileSync(path.join(cardsDir, f), 'utf8'), f);
+    c.date = c.date || fs.statSync(path.join(cardsDir, f)).mtime.toISOString().slice(0, 10);
+    return c;
+  }).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.title.localeCompare(b.title)));
 }
-const line = (c) => `${c.id.padEnd(5)} ${tag(c).padEnd(28)} ${written(c) ? 'written    ' : 'NOT WRITTEN'} ${done(c) ? 'done' : '    '}  ${c.title}`;
+const line = (c) => `${c.id.padEnd(24)} ${c.field.padEnd(18)} ${c.date}  ${c.title}${c.builds_on.length ? '  (builds on ' + c.builds_on.join(', ') + ')' : ''}`;
 
-// ---- page building ----
-const fullDoc = (body) => `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<style>:root{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
-</head><body>
-${body}
-</body></html>
-`;
-
-// mode 'artifact': links between fields use the user's own artifact links. mode 'site': relative links.
-function fieldHref(trackId, mode) {
-  if (mode === 'site') return `../${trackId}/`;
-  return state.artifacts[trackId] || null;
-}
-function homeHref(mode, fromHome) {
-  if (mode === 'site') return fromHome ? './' : '../';
-  return state.artifacts.home || null;
-}
-function ref(id, fromTrack, mode) {
-  const c = conceptOf(id);
-  if (!c) throw new Error('Unknown concept id in {{link:...}}: ' + id);
-  const label = `${esc(tag(c))}: ${esc(c.title)}`;
-  if (!written(c)) return `<span class="planned">${label} (not written yet)</span>`;
-  if (c.track === fromTrack) return `<a href="#l${c.n}">${label}</a>`;
-  const href = fieldHref(c.track, mode);
-  return href ? `<a href="${esc(href)}#l${c.n}">${label}</a>` : `<span class="planned">${label} (in the ${esc(trackOf(c.track).name)} field)</span>`;
-}
-
-function buildTrack(trackId, mode) {
-  const track = trackOf(trackId);
-  if (!track) throw new Error('Unknown field: ' + trackId + '. Fields: ' + graph.tracks.map((t) => t.id).join(', '));
-  const lessons = lessonsIn(trackId);
-  if (!lessons.length) throw new Error(`No lessons written yet in "${trackId}".`);
-  const concepts = conceptsIn(trackId);
-
-  const tabs = lessons.map((l) =>
-    `      <a class="tab" href="#l${l.n}" data-id="l${l.n}" title="${esc(l.title)}"><span class="n"><span>${l.n}</span></span>${esc(l.short)}</a>`).join('\n');
-
-  const views = lessons.map((l) => {
-    const body = l.body.replace(/\{\{link:([a-z0-9]+)\}\}/g, (_, id) => ref(id, trackId, mode));
-    const nextWritten = lessons.find((x) => x.n === l.n + 1);
-    const nextPlanned = concepts.find((c) => c.n === l.n + 1);
-    const next = nextWritten
-      ? `<a href="#l${nextWritten.n}">Next: ${esc(nextWritten.title)}</a>`
-      : nextPlanned
-        ? `Next in this field: <strong>${esc(nextPlanned.title)}</strong>. Ask Claude for the next ${esc(track.name)} lesson.`
-        : 'This is the last lesson on the roadmap.';
-    return `  <article class="view lesson" id="view-l${l.n}" hidden>
-${body}
-    <footer class="lesson-end wide">
-      <button type="button" class="done-btn" id="l${l.n}-done" data-done="l${l.n}" aria-pressed="false">Mark lesson complete</button>
-      <span class="next">${next}</span>
-    </footer>
-  </article>`;
+// ---- notebook page ----
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+function md(src) {
+  const inline = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>').replace(/`(.+?)`/g, '<code>$1</code>');
+  return src.split(/\n{2,}/).map((b) => {
+    if (/^\s*- /.test(b)) return '<ul>' + b.split(/\n(?=\s*- )/).map((li) => `<li>${inline(li.replace(/^\s*- /, '').replace(/\n/g, ' '))}</li>`).join('') + '</ul>';
+    const h = b.match(/^#{1,4} (.*)/); if (h) return `<h3>${inline(h[1])}</h3>`;
+    return `<p>${inline(b.replace(/\n/g, ' '))}</p>`;
   }).join('\n');
-
-  const roadmap = concepts.map((c) => {
-    const w = written(c);
-    const title = w ? `<a href="#l${c.n}">${esc(c.title)}</a>` : esc(c.title);
-    const x = (c.links || []).map((id) => { const o = conceptOf(id); return o ? esc(tag(o)) : ''; }).filter(Boolean);
-    return `      <li class="${w ? 'built' : ''}"><span class="n">${String(c.n).padStart(2, '0')}</span><span>${title}${x.length ? `<span class="x">Connects to ${x.join(', ')}</span>` : ''}</span><span class="st">${w ? 'Written' : 'Planned'}</span></li>`;
-  }).join('\n');
-
-  const hh = homeHref(mode, false);
-  const page = fill(read('shared/shell.html'), {
-    BASE_CSS: read('shared/base.css'),
-    TRACK_NAME: esc(track.name),
-    TRACK_ID: trackId,
-    TRACK_SUMMARY: esc(track.summary),
-    FIRST_ID: 'l' + lessons[0].n,
-    START_ID: opts.start && lessons.some((l) => 'l' + l.n === opts.start) ? opts.start : '',
-    HOME_LINK: hh ? `<a href="${esc(hh)}">All fields</a>` : '<span class="sub">Learning Database</span>',
-    TABS: tabs, VIEWS: views, ROADMAP: roadmap,
-    BUILT_COUNT: lessons.length, TOTAL_COUNT: concepts.length,
-  });
-  const res = { field: trackId, lessons: lessons.map((l) => `l${l.n} ${l.title}`) };
-  if (mode === 'site') res.page = writeOut(`${trackId}/index.html`, fullDoc(page));
-  else {
-    res.artifactFile = writeOut(`${trackId}/index.html`, page);   // for the Claude Code Artifact tool (it adds the document skeleton)
-    res.page = writeOut(`${trackId}/page.html`, fullDoc(page));   // complete standalone document (Claude chat, local viewing)
-    res.artifactUrl = state.artifacts[trackId] || null;
-  }
-  return res;
 }
-
-function buildHome(mode) {
-  let total = 0;
-  const fields = graph.tracks.map((t) => {
-    const cs = conceptsIn(t.id), n = lessonsIn(t.id).length;
-    total += n;
-    const count = t.roadmap === 'detailed' ? `${n} of ${cs.length} lessons` : (n ? `${n} lesson${n === 1 ? '' : 's'}` : 'Roadmap written with the first lesson');
-    const pct = cs.length && t.roadmap === 'detailed' ? Math.round((n / cs.length) * 100) : 0;
-    const href = n ? (mode === 'site' ? `${t.id}/` : state.artifacts[t.id]) : null;
-    const go = href ? `<a href="${esc(href)}">Open</a>` : `<span>${n ? 'Ask Claude to open it' : 'Not started'}</span>`;
-    return `      <li><div><div class="name">${esc(t.name)}</div><div class="sum">${esc(t.summary)}</div></div><div class="prog"><div class="count">${count}</div><div class="bar"><i style="width:${pct}%"></i></div></div><div class="go">${go}</div></li>`;
-  }).join('\n');
-
-  const seen = new Set(), links = [];
-  const side = (c) => {
-    const w = written(c);
-    const href = w ? (mode === 'site' ? `${c.track}/` : state.artifacts[c.track]) : null;
-    const title = href ? `<a href="${esc(href)}#l${c.n}">${esc(c.title)}</a>` : esc(c.title);
-    return `<div class="${w ? 'built' : ''}"><span class="f">${esc(tag(c))}${w ? ' · written' : ''}</span>${title}</div>`;
-  };
-  for (const c of graph.concepts) {
-    for (const id of [...(c.links || []), ...(c.prereqs || [])]) {
-      const o = conceptOf(id);
-      if (!o || o.track === c.track) continue;
-      const key = [c.id, o.id].sort().join('|');
-      if (seen.has(key)) continue;
-      seen.add(key);
-      links.push(`      <li>${side(c)}<div class="mid" aria-hidden="true">↔</div>${side(o)}</li>`);
-    }
+function mapSvg(list) {
+  if (!list.length) return '';
+  const fields = [...new Set(list.map((c) => c.field))], pos = {}, W = 132, H = 40, PER = 4;
+  let y = 24; const labels = [];
+  for (const f of fields) {
+    const fc = list.filter((c) => c.field === f);
+    labels.push(`<text class="ts" x="20" y="${y + 24}">${esc(f)}</text>`);
+    fc.forEach((c, i) => { pos[c.id] = { x: 130 + (i % PER) * (W + 14), y: y + Math.floor(i / PER) * (H + 18) }; });
+    y += Math.ceil(fc.length / PER) * (H + 18) + 14;
   }
-  const page = fill(read('shared/home.html'), {
-    BASE_CSS: read('shared/base.css'), FIELDS: fields, LINKS: links.join('\n'),
-    BUILT_TOTAL: `${total} lesson${total === 1 ? '' : 's'}`, FIELD_COUNT: graph.tracks.length,
-  });
-  const res = { field: 'home' };
-  if (mode === 'site') res.page = writeOut('index.html', fullDoc(page));
-  else {
-    res.artifactFile = writeOut('home/index.html', page);
-    res.page = writeOut('home/page.html', fullDoc(page));
-    res.artifactUrl = state.artifacts.home || null;
+  const edges = [];
+  for (const c of list) for (const b of c.builds_on) if (pos[b]) {
+    const a = pos[b], t = pos[c.id];
+    edges.push(`<path d="M${a.x + W / 2} ${a.y + H} C${a.x + W / 2} ${a.y + H + 30} ${t.x + W / 2} ${t.y - 30} ${t.x + W / 2} ${t.y}" fill="none" stroke="var(--text-muted)" stroke-width="1"/>`);
   }
-  return res;
+  const nodes = list.map((c) => { const p = pos[c.id], t = c.title.length > 18 ? c.title.slice(0, 17) + '…' : c.title;
+    return `<a href="#${c.id}"><g class="c-teal"><rect x="${p.x}" y="${p.y}" width="${W}" height="${H}" rx="6" stroke-width="0.5"/><text class="t" x="${p.x + W / 2}" y="${p.y + H / 2}" text-anchor="middle" dominant-baseline="central">${esc(t)}</text></g></a>`; });
+  return `<svg width="100%" viewBox="0 0 680 ${y + 10}" role="img"><title>Your concept map</title><desc>Each box is a card; lines show what each card builds on.</desc>${labels.join('')}${edges.join('')}${nodes.join('')}</svg>`;
 }
-
-// ---- validation ----
-function check() {
-  const errs = [];
-  const ids = new Set();
-  for (const c of graph.concepts) {
-    if (ids.has(c.id)) errs.push(`Duplicate concept id ${c.id}`);
-    ids.add(c.id);
-    if (!trackOf(c.track)) errs.push(`${c.id}: unknown field ${c.track}`);
-  }
-  for (const c of graph.concepts) {
-    for (const p of [...(c.prereqs || []), ...(c.links || [])]) if (!ids.has(p)) errs.push(`${c.id}: refers to unknown concept ${p}`);
-  }
-  const visiting = new Set(), ok = new Set();
-  const walk = (id, trail) => {
-    if (ok.has(id) || !ids.has(id)) return;
-    if (visiting.has(id)) { errs.push('Prerequisite cycle: ' + [...trail, id].join(' -> ')); return; }
-    visiting.add(id);
-    for (const p of conceptOf(id).prereqs || []) walk(p, [...trail, id]);
-    visiting.delete(id); ok.add(id);
-  };
-  for (const c of graph.concepts) walk(c.id, []);
-  for (const t of graph.tracks) {
-    let lessons = [];
-    try { lessons = lessonsIn(t.id); } catch (e) { errs.push(e.message); continue; }
-    for (const l of lessons) {
-      const c = conceptOf(l.id);
-      if (!c) { errs.push(`${t.id}/${l.file}: id ${l.id} is not in the graph`); continue; }
-      if (c.track !== t.id || c.n !== l.n) errs.push(`${t.id}/${l.file}: meta (n=${l.n}) does not match graph (${c.track} n=${c.n})`);
-      for (const k of ['short', 'title', 'minutes']) if (!l[k]) errs.push(`${t.id}/${l.file}: meta is missing "${k}"`);
-      for (const p of c.prereqs || []) { const pc = conceptOf(p); if (pc && !written(pc)) errs.push(`${t.id}/${l.file}: prerequisite ${p} (${pc.title}) is not written`); }
-      for (const m of l.body.matchAll(/\{\{link:([a-z0-9]+)\}\}/g)) if (!ids.has(m[1])) errs.push(`${t.id}/${l.file}: {{link:${m[1]}}} is not in the graph`);
-      if (!l.body.includes(`LD.register('l${l.n}'`) && /<canvas|class="bench"/.test(l.body)) errs.push(`${t.id}/${l.file}: has an interactive but no LD.register('l${l.n}', ...)`);
-      if (!/Sources<\/span>/.test(l.body)) errs.push(`${t.id}/${l.file}: no Sources section`);
-    }
-  }
-  return errs;
+function notebook() {
+  const list = cards(), newest = [...list].reverse();
+  const body = newest.map((c, i) => `<details class="card" id="${c.id}"${i === 0 ? ' open' : ''}>
+<summary><span class="f">${esc(c.field)}</span><span class="ti">${esc(c.title)}</span><span class="d">${c.date}</span></summary>
+<div class="cb">
+<div class="prose">${md(c.text)}</div>
+<div class="widget">
+${c.widget}
+</div>
+<details class="recall"><summary>Recall: ${esc(c.recall)}</summary><p>${esc(c.answer || '')}</p></details>
+${c.sources ? `<p class="src">Sources: ${esc(c.sources)}</p>` : ''}
+</div>
+</details>`).join('\n');
+  const fields = new Set(list.map((c) => c.field)).size;
+  const tpl = fs.readFileSync(path.join(skill, 'shared/notebook.html'), 'utf8');
+  return tpl.replace('%%COUNT%%', `${list.length} card${list.length === 1 ? '' : 's'} across ${fields} field${fields === 1 ? '' : 's'}`)
+    .replace('%%MAP%%', () => mapSvg(list) || '<p class="empty">Your map grows as you learn. Ask Claude about any concept to add your first card.</p>')
+    .replace('%%CARDS%%', () => body);
 }
 
 // ---- commands ----
 function main() {
   switch (cmd) {
     case 'status': {
-      const only = args[0];
-      for (const t of graph.tracks) {
-        if (only && t.id !== only) continue;
-        const cs = conceptsIn(t.id), w = cs.filter(written).length, d = cs.filter(done).length;
-        console.log(`${t.id}  "${t.name}"  ${w} written / ${cs.length} planned (${t.roadmap} roadmap), ${d} done by this user${state.artifacts[t.id] ? '  artifact: ' + state.artifacts[t.id] : ''}`);
-        if (only) cs.forEach((c) => console.log('  ' + line(c)));
-      }
-      if (!only) console.log(`\nhome artifact: ${state.artifacts.home || '(none yet)'}\nstate file: ${statePath}\ndatabase: ${skill}\nshared repo: ${graph.repo || '(not published yet)'}`);
+      const list = cards(), due = list.filter((c) => (state.reviews[c.id] || {}).next <= today());
+      console.log(`${list.length} cards in ${cardsDir}`);
+      const byField = {}; list.forEach((c) => { byField[c.field] = (byField[c.field] || 0) + 1; });
+      for (const [f, n] of Object.entries(byField)) console.log(`  ${f}: ${n}`);
+      console.log(`notebook artifact: ${state.notebook || '(none yet)'}\ndue for recall: ${due.length}`);
       break;
     }
+    case 'list': { cards().filter((c) => !args[0] || c.field === args[0]).forEach((c) => console.log(line(c))); break; }
     case 'find': {
-      const STOP = new Set('why how what when where does did the and for are was can you not but with from that this its into about work works working mean means really actually explain'.split(' '));
-      const words = args.join(' ').toLowerCase().split(/[^a-z0-9']+/).filter((w) => w.length > 2 && !STOP.has(w));
-      if (!words.length) throw new Error('Usage: find <words...>');
-      const scored = graph.concepts.map((c) => {
-        const title = c.title.toLowerCase(), cov = (c.covers || '').toLowerCase();
-        let s = 0;
-        for (const w of words) { if (title.includes(w)) s += 3; if (cov.includes(w)) s += 2; }
-        return { c, s };
-      }).filter((x) => x.s > 0).sort((a, b) => b.s - a.s).slice(0, 6);
-      if (!scored.length) { console.log('No concept matches. This is a new concept: place it in a field (see reference/authoring.md).'); break; }
-      for (const { c } of scored) { console.log(line(c)); console.log(`      covers: ${c.covers || ''}`); }
-      console.log('\nRun "chain <id>" on the best match for its prerequisites.');
+      const words = args.join(' ').toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2);
+      const hits = cards().map((c) => { const hay = (c.title + ' ' + c.id + ' ' + c.text).toLowerCase(); return { c, s: words.filter((w) => hay.includes(w)).length + words.filter((w) => c.title.toLowerCase().includes(w)).length * 2 }; })
+        .filter((x) => x.s > 0).sort((a, b) => b.s - a.s).slice(0, 5);
+      if (!hits.length) console.log('Not in the learner\'s cards yet.');
+      hits.forEach(({ c }) => console.log(line(c)));
       break;
     }
-    case 'chain': {
-      const list = chain(args[0]);
-      list.forEach((c, i) => console.log(`${String(i + 1).padStart(2)}. ${line(c)}`));
-      const missing = list.filter((c) => !written(c));
-      console.log(`\n${list.length} lessons in the chain, ${missing.length} not written yet, ${list.filter(done).length} already done by this user.`);
+    case 'save': {
+      const file = path.resolve(args[0] || '');
+      const card = parseCard(fs.readFileSync(file, 'utf8'), file);
+      fs.mkdirSync(cardsDir, { recursive: true });
+      const dest = path.join(cardsDir, card.id + '.md'), existed = fs.existsSync(dest);
+      let src = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
+      if (!/^date:/m.test(src.split('\n---\n')[0])) src = src.replace(/^---\n/, `---\ndate: ${today()}\n`);
+      fs.writeFileSync(dest, src);
+      if (!state.reviews[card.id]) { state.reviews[card.id] = { step: 0, next: addDays(today(), STEPS[0]) }; saveState(); }
+      console.log(`${existed ? 'Updated' : 'Saved'} ${card.id}: ${card.title}`);
       break;
     }
-    case 'next': {
-      const t = trackOf(args[0]);
-      if (!t) throw new Error('Unknown field: ' + args[0] + '. Fields: ' + graph.tracks.map((x) => x.id).join(', '));
-      const c = conceptsIn(t.id).find((x) => !done(x));
-      if (!c) { console.log(`Every planned lesson in ${t.name} is done. Extend the roadmap (reference/authoring.md).`); break; }
-      console.log(line(c));
-      const miss = chain(c.id).filter((x) => x.id !== c.id && !written(x));
-      if (!written(c)) console.log(miss.length ? `Not written, and ${miss.length} prerequisite(s) are also missing: ${miss.map((x) => x.id).join(', ')}. Write those first.` : 'Not written yet: write it (reference/authoring.md).');
-      else console.log(`Open tab #l${c.n} of the ${t.name} artifact.`);
-      if (t.roadmap === 'seed') console.log('This field has only a seed roadmap: write the detailed roadmap before its first lesson.');
+    case 'due': {
+      const c = cards().filter((x) => (state.reviews[x.id] || {}).next <= today()).sort((a, b) => (state.reviews[a.id].next < state.reviews[b.id].next ? -1 : 1))[0];
+      if (!c) { console.log('Nothing due.'); break; }
+      console.log(`${c.id}\nQuestion: ${c.recall}\nAnswer: ${c.answer || '(see card)'}`);
       break;
     }
-    case 'build': {
-      const target = args[0];
-      if (!target) throw new Error('Usage: build <field|home|all> [--out DIR] [--start lN]');
-      const res = [];
-      if (target === 'home') res.push(buildHome('artifact'));
-      else if (target === 'all') { for (const t of graph.tracks) if (lessonsIn(t.id).length) res.push(buildTrack(t.id, 'artifact')); res.push(buildHome('artifact')); }
-      else res.push(buildTrack(target, 'artifact'));
-      console.log(JSON.stringify(res, null, 2));
+    case 'reviewed': {
+      const [id, how] = args; const r = state.reviews[id];
+      if (!r || !['ok', 'again'].includes(how)) throw new Error('Usage: reviewed <id> ok|again (id must be a saved card)');
+      r.step = how === 'ok' ? r.step + 1 : 0;
+      r.next = addDays(today(), r.step < STEPS.length ? STEPS[r.step] : 120);
+      saveState(); console.log(`${id}: next recall ${r.next}`);
       break;
     }
-    case 'site': {
-      const res = [];
-      for (const t of graph.tracks) if (lessonsIn(t.id).length) res.push(buildTrack(t.id, 'site'));
-      res.push(buildHome('site'));
-      console.log(JSON.stringify(res, null, 2));
-      break;
-    }
-    case 'done': {
-      const today = new Date().toISOString().slice(0, 10);
-      for (const id of args) { if (!conceptOf(id)) throw new Error('Unknown concept: ' + id); state.progress[id] = state.progress[id] || today; }
-      saveState(state); console.log('Recorded: ' + args.join(', '));
+    case 'notebook': {
+      const out = opts.out ? path.resolve(opts.out) : path.join(home, 'build');
+      fs.mkdirSync(out, { recursive: true });
+      const page = notebook();
+      fs.writeFileSync(path.join(out, 'index.html'), page);
+      fs.writeFileSync(path.join(out, 'page.html'), `<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><style>body{margin:0}[hidden]{display:none!important}</style></head><body>\n${page}\n</body></html>\n`);
+      console.log(JSON.stringify({ artifactFile: path.join(out, 'index.html'), page: path.join(out, 'page.html'), artifactUrl: state.notebook }, null, 2));
       break;
     }
     case 'artifact': {
-      if (args[0] !== 'home' && !trackOf(args[0])) throw new Error('Unknown field: ' + args[0]);
-      if (!/^https:\/\//.test(args[1] || '')) throw new Error('Usage: artifact <field|home> <https url>');
-      state.artifacts[args[0]] = args[1]; saveState(state); console.log(`Saved ${args[0]} -> ${args[1]}`);
-      break;
-    }
-    case 'check': {
-      const errs = check();
-      if (errs.length) { errs.forEach((e) => console.error('ERROR ' + e)); process.exit(1); }
-      console.log(`OK: ${graph.concepts.length} concepts, ${graph.tracks.reduce((n, t) => n + lessonsIn(t.id).length, 0)} lessons.`);
+      if (!/^https:\/\//.test(args[0] || '')) throw new Error('Usage: artifact <https url>');
+      state.notebook = args[0]; saveState(); console.log('Saved notebook link.');
       break;
     }
     default:
-      console.log('Commands: status [field] | find <words> | chain <id> | next <field> | build <field|home|all> [--out DIR] [--start lN] | site --out DIR | done <id...> | artifact <field|home> <url> | check');
+      console.log('Commands: status | list [field] | find <words> | save <card.md> | due | reviewed <id> ok|again | notebook [--out DIR] [--cards DIR] | artifact <url>');
       if (cmd) process.exit(1);
   }
 }

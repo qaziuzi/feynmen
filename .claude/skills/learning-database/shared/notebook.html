@@ -1,0 +1,100 @@
+<title>Learning Notebook</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* One reading column (~720px). Tokens mirror the inline visual tool's variables so card visuals render the same here. */
+:root {
+  --text-primary: #1f1e1d; --text-secondary: #5f5e5a; --text-muted: #8f8d86;
+  --border: rgba(31,30,29,.12); --border-strong: rgba(31,30,29,.22);
+  --surface-0: #f5f4ef; --surface-1: #efede6; --surface-2: #ffffff;
+  --bg-accent: #e6f1fb; --text-accent: #185fa5; --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-voice: Georgia, "Times New Roman", serif;
+  --teal-fill: #E1F5EE; --teal-stroke: #0F6E56; --teal-text: #085041;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --text-primary: #ecebe6; --text-secondary: #b4b2a9; --text-muted: #888780;
+  --border: rgba(236,235,230,.12); --border-strong: rgba(236,235,230,.24);
+  --surface-0: #1c1b1a; --surface-1: #262624; --surface-2: #2c2c2a;
+  --bg-accent: #0c447c; --text-accent: #85b7eb;
+  --teal-fill: #085041; --teal-stroke: #5DCAA5; --teal-text: #E1F5EE; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --text-primary: #ecebe6; --text-secondary: #b4b2a9; --text-muted: #888780;
+  --border: rgba(236,235,230,.12); --border-strong: rgba(236,235,230,.24);
+  --surface-0: #1c1b1a; --surface-1: #262624; --surface-2: #2c2c2a;
+  --bg-accent: #0c447c; --text-accent: #85b7eb;
+  --teal-fill: #085041; --teal-stroke: #5DCAA5; --teal-text: #E1F5EE; color-scheme: dark; }
+body { background: var(--surface-0); color: var(--text-primary); font: 16px/1.7 var(--font-sans); }
+.nb { max-width: 720px; margin: 0 auto; padding-block: 32px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 24px; }
+h1 { font-size: 26px; font-weight: 500; margin: 0; text-wrap: balance; }
+h2 { font-size: 18px; font-weight: 500; margin: 0; }
+h3 { font-size: 16px; font-weight: 500; margin: 0; }
+.sub { color: var(--text-secondary); margin: 4px 0 0; }
+.empty { color: var(--text-secondary); }
+.map { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px; padding: 12px; overflow-x: auto; }
+.cards { display: flex; flex-direction: column; gap: 10px; }
+details.card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px; }
+details.card > summary { cursor: pointer; list-style: none; display: grid; grid-template-columns: 110px minmax(0,1fr) auto; gap: 12px; align-items: baseline; padding: 14px 18px; }
+details.card > summary::-webkit-details-marker { display: none; }
+summary .f { font-size: 13px; color: var(--text-secondary); }
+summary .ti { font-weight: 500; }
+summary .d { font-size: 13px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 520px) { details.card > summary { grid-template-columns: minmax(0,1fr) auto; } summary .f { grid-column: 1 / -1; } }
+.cb { padding: 4px 18px 18px; display: flex; flex-direction: column; gap: 16px; border-top: 0.5px solid var(--border); }
+.prose { font-family: var(--font-voice); font-size: 17px; display: flex; flex-direction: column; gap: 12px; max-width: 64ch; }
+.prose p, .prose ul { margin: 0; }
+.prose ul { padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; }
+.prose strong { font-weight: 500; font-family: var(--font-sans); font-size: 15px; }
+.widget { min-width: 0; }
+details.recall { background: var(--surface-1); border-radius: var(--radius); padding: 10px 14px; font-size: 15px; }
+details.recall summary { cursor: pointer; color: var(--text-secondary); }
+details.recall p { margin: 8px 0 0; }
+.src { font-size: 13px; color: var(--text-muted); margin: 0; }
+a { color: var(--text-accent); }
+:focus-visible { outline: 2px solid var(--text-accent); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.widget button { font: inherit; font-size: 14px; color: var(--text-primary); background: transparent; border: 0.5px solid var(--border-strong); border-radius: var(--radius); padding: 6px 12px; cursor: pointer; }
+.widget button:hover { background: var(--surface-1); }
+.widget input[type="range"] { accent-color: var(--text-accent); min-width: 0; }
+.ld-ask { display: none !important; }
+svg text.t { font: 14px var(--font-sans); fill: var(--text-primary); }
+svg text.ts { font: 12px var(--font-sans); fill: var(--text-secondary); }
+svg text.th { font: 500 14px var(--font-sans); fill: var(--text-primary); }
+svg .box { fill: var(--surface-1); stroke: var(--border-strong); }
+svg .arr { stroke: var(--text-secondary); stroke-width: 1.5; fill: none; }
+svg .leader { stroke: var(--text-muted); stroke-width: .5; stroke-dasharray: 3 3; fill: none; }
+svg .c-teal > rect, svg rect.c-teal, svg .c-teal > circle { fill: var(--teal-fill); stroke: var(--teal-stroke); }
+svg .c-teal > text { fill: var(--teal-text); }
+svg .c-gray > rect, svg rect.c-gray { fill: var(--surface-1); stroke: var(--border-strong); }
+svg .c-coral > rect, svg rect.c-coral, svg .c-coral > circle { fill: #FAECE7; stroke: #993C1D; } svg .c-coral > text { fill: #712B13; }
+svg .c-blue > rect, svg rect.c-blue, svg .c-blue > circle { fill: #E6F1FB; stroke: #185FA5; } svg .c-blue > text { fill: #0C447C; }
+svg .c-amber > rect, svg rect.c-amber, svg .c-amber > circle { fill: #FAEEDA; stroke: #854F0B; } svg .c-amber > text { fill: #633806; }
+svg .c-purple > rect, svg rect.c-purple, svg .c-purple > circle { fill: #EEEDFE; stroke: #534AB7; } svg .c-purple > text { fill: #3C3489; }
+.map a:hover rect { stroke-width: 1.5; }
+</style>
+
+<main class="nb">
+  <header>
+    <h1>Learning notebook</h1>
+    <p class="sub">%%COUNT%%. Every card you have learned, and how they connect.</p>
+  </header>
+  <section style="display:flex;flex-direction:column;gap:10px">
+    <h2>Your concept map</h2>
+    <div class="map">%%MAP%%</div>
+  </section>
+  <section style="display:flex;flex-direction:column;gap:10px">
+    <h2>Cards, newest first</h2>
+    <div class="cards">
+%%CARDS%%
+    </div>
+  </section>
+</main>
+<script>
+(function () {
+  function openHash() {
+    var id = (location.hash || '').slice(1); if (!id) return;
+    var el = document.getElementById(id);
+    if (el && el.tagName === 'DETAILS') { el.open = true; el.scrollIntoView({ block: 'start' }); }
+  }
+  window.addEventListener('hashchange', openHash); openHash();
+})();
+</script>

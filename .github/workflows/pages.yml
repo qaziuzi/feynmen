@@ -1,4 +1,4 @@
-name: Check lessons and publish site
+name: Publish example notebook and skill zip
 
 on:
   push:
@@ -15,17 +15,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Validate graph and lessons
-        run: node .claude/skills/learning-database/scripts/ld.mjs check
-      - name: Build site
-        run: node .claude/skills/learning-database/scripts/ld.mjs site --out _site
+      - name: Build example notebook
+        run: |
+          node .claude/skills/learning-database/scripts/ld.mjs notebook --cards .claude/skills/learning-database/examples --out _site
+          cp _site/page.html _site/index.html
         env:
           LEARNING_DB_HOME: ${{ runner.temp }}/ld
       - name: Build skill zip
@@ -37,7 +37,7 @@ jobs:
 
   deploy:
     if: github.event_name == 'push'
-    needs: check
+    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
