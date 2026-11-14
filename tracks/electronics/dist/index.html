@@ -1,0 +1,763 @@
+<title>Electronics Foundations</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+/* Layout: a sticky field header with a scrolling lesson strip, one left-aligned reading column (~68ch),
+   and wider "bench" panels for interactives. Charge sign colours (--pos / --neg) are semantic, separate from the accent. */
+:root {
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --sunken: #e9edf2;
+  --ink: #16212e;
+  --muted: #566475;
+  --line: #d2dae4;
+  --accent: #0a6a70;
+  --accent-soft: #dcefef;
+  --on-accent: #ffffff;
+  --pos: #c2372d;
+  --neg: #2257c5;
+  --ok: #1d7a46;
+  --font-read: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e141b; --surface: #161e28; --sunken: #0a0f15; --ink: #e3e9f0; --muted: #93a1b2; --line: #2b3644;
+    --accent: #5ccfc9; --accent-soft: #12373a; --on-accent: #06201f;
+    --pos: #ff8073; --neg: #77a8ff; --ok: #5fd08d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e141b; --surface: #161e28; --sunken: #0a0f15; --ink: #e3e9f0; --muted: #93a1b2; --line: #2b3644;
+  --accent: #5ccfc9; --accent-soft: #12373a; --on-accent: #06201f;
+  --pos: #ff8073; --neg: #77a8ff; --ok: #5fd08d;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-read);
+  font-size: 17px;
+  line-height: 1.62;
+  -webkit-text-size-adjust: 100%;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg);
+}
+a { color: var(--accent); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+h1, h2, h3 { font-family: var(--font-ui); font-weight: 600; line-height: 1.2; text-wrap: balance; margin: 0; }
+p { margin: 0; }
+
+.gutter {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 860px; margin-inline: auto; }
+
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); border-bottom: 1px solid var(--line);
+}
+.brand {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  padding-block: 12px 6px; font-family: var(--font-ui);
+}
+.brand .field { font-weight: 600; font-size: 15px; letter-spacing: 0.01em; }
+.brand a, .brand .sub { font-size: 13px; color: var(--muted); }
+.brand a { color: var(--accent); }
+
+.eyebrow {
+  font-family: var(--font-ui); font-size: 12px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 6px;
+}
+.muted { color: var(--muted); }
+.ui { font-family: var(--font-ui); }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+
+/* ---------- lesson strip ---------- */
+.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: thin; font-family: var(--font-ui); }
+.tab {
+  flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 12px 9px;
+  font-size: 14px; color: var(--muted); text-decoration: none; white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+.tab:hover { color: var(--ink); }
+.tab[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 500; }
+.tab .n {
+  font-family: var(--font-mono); font-size: 12px; min-width: 22px; height: 22px; padding: 0 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); border-radius: 50%; color: var(--muted);
+}
+.tab.done .n { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.tab.done .n::after { content: "\2713"; }
+.tab.done .n span { display: none; }
+
+/* ---------- lesson text ---------- */
+.page { padding-block: 32px 72px; }
+.view > * { max-width: 68ch; }
+.view > .bench, .view > .wide { max-width: none; }
+.lesson { display: flex; flex-direction: column; gap: 18px; }
+.lesson h1 { font-size: clamp(28px, 5vw, 38px); letter-spacing: -0.01em; }
+.lesson .meta { font-family: var(--font-ui); font-size: 13px; color: var(--muted); }
+.lesson h2 { font-size: 22px; margin-top: 30px; }
+.lesson h3 { font-size: 16px; margin-top: 10px; }
+.lesson ul, .lesson ol { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 8px; }
+.lesson li { padding-left: 2px; }
+.lesson strong { font-weight: 600; }
+.tex.display { display: block; overflow-x: auto; overflow-y: hidden; padding: 6px 0; text-align: left; }
+math { font-size: 1.08em; }
+.tex.display math { font-size: 1.22em; }
+
+.law {
+  border-left: 3px solid var(--accent); background: var(--surface); padding: 14px 18px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.limits { font-size: 15.5px; color: var(--muted); }
+.planned { color: var(--muted); }
+.sources { font-size: 15px; }
+.sources li { color: var(--muted); }
+.sources li cite, .sources li b { color: var(--ink); font-weight: 400; }
+
+/* ---------- predict / check ---------- */
+details.predict, details.check {
+  border: 1px solid var(--line); border-radius: 6px; background: var(--surface);
+}
+details.predict > summary, details.check > summary {
+  cursor: pointer; padding: 12px 16px; list-style: none; display: flex; gap: 12px; align-items: baseline;
+}
+details > summary::-webkit-details-marker { display: none; }
+details.predict > summary::before, details.check > summary::before {
+  content: attr(data-tag); flex: none; font-family: var(--font-ui); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent);
+}
+details.predict > summary::after, details.check > summary::after {
+  content: "Show answer"; margin-left: auto; flex: none; font-family: var(--font-ui); font-size: 12.5px; color: var(--accent);
+  text-decoration: underline; text-underline-offset: 2px;
+}
+details[open].predict > summary::after, details[open].check > summary::after { content: "Hide"; }
+details .ans { padding: 12px 16px 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+@media (max-width: 520px) {
+  details.predict > summary, details.check > summary { flex-wrap: wrap; }
+  details.predict > summary::before, details.check > summary::before { width: 100%; }
+}
+
+/* ---------- bench (interactive panel) ---------- */
+.bench {
+  margin: 8px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+  display: flex; flex-direction: column; font-family: var(--font-ui); font-size: 14px; line-height: 1.45;
+}
+.bench-title {
+  padding: 10px 16px; border-bottom: 1px solid var(--line); font-weight: 600; font-size: 13px;
+  letter-spacing: 0.02em; display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: space-between; align-items: baseline;
+}
+.bench-title .hint { font-weight: 400; color: var(--muted); }
+.bench-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.bench-grid > * { min-width: 0; }
+.bench canvas { display: block; width: 100%; background: var(--surface); }
+.bench canvas.draggable { touch-action: none; }
+.bench-grid canvas + canvas { border-left: 1px solid var(--line); }
+@media (max-width: 640px) { .bench-grid canvas + canvas { border-left: 0; border-top: 1px solid var(--line); } }
+.controls {
+  display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 14px 16px; border-top: 1px solid var(--line); align-items: center;
+}
+.ctl { display: grid; grid-template-columns: auto minmax(110px, 1fr) 76px; gap: 10px; align-items: center; flex: 1 1 240px; min-width: 0; }
+.ctl .name { font-weight: 500; }
+.ctl output { font-family: var(--font-mono); font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
+.ctl input[type="range"] { width: 100%; accent-color: var(--accent); min-width: 0; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button, .bench select {
+  font: inherit; font-size: 13px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 4px;
+  background: var(--bg); color: var(--ink); cursor: pointer;
+}
+.seg button:hover { border-color: var(--accent); }
+.seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.readout {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line);
+  border-top: 1px solid var(--line); margin: 0;
+}
+.readout > div { background: var(--surface); padding: 10px 16px; min-width: 0; }
+.readout dt { font-size: 12px; color: var(--muted); }
+.readout dd { margin: 2px 0 0; font-family: var(--font-mono); font-size: 14.5px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.readout dd.flag { color: var(--ok); }
+.bench .note { padding: 10px 16px 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+
+/* ---------- lesson end / roadmap ---------- */
+.lesson-end {
+  margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: center; font-family: var(--font-ui); font-size: 14px;
+}
+.done-btn {
+  font: inherit; font-weight: 500; padding: 9px 16px; border-radius: 4px; cursor: pointer;
+  background: var(--accent); color: var(--on-accent); border: 1px solid var(--accent);
+}
+.done-btn[aria-pressed="true"] { background: transparent; color: var(--accent); }
+.lesson-end .next { color: var(--muted); flex: 1 1 260px; min-width: 0; }
+
+.roadmap { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; font-family: var(--font-ui); font-size: 15px; }
+.roadmap li { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+.roadmap .n { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.roadmap .st { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.roadmap li.built .st { color: var(--ok); }
+.roadmap .x { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
+#view-roadmap { display: flex; flex-direction: column; gap: 16px; }
+#view-roadmap h1 { font-size: 30px; }
+
+@media (prefers-reduced-motion: no-preference) { .tab, .seg button, .done-btn { transition: color .12s, background-color .12s, border-color .12s; } }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script>
+/* LD: shared helpers for every lesson in this field. */
+window.LD = (function () {
+  var KEY = 'ld:electronics';
+  var inits = {}, started = {}, redraws = {}, building = null, current = null;
+
+  var store = {
+    get: function (k, d) { try { var v = localStorage.getItem(KEY + ':' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set: function (k, v) { try { localStorage.setItem(KEY + ':' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  /* Format a number with an SI prefix: fmt(3.99e-5, 'N') -> "39.9 µN" */
+  function fmt(x, unit, digits) {
+    digits = digits || 3; unit = unit || '';
+    if (!isFinite(x)) return '—';
+    if (x === 0) return '0 ' + unit;
+    var P = { '-18': 'a', '-15': 'f', '-12': 'p', '-9': 'n', '-6': 'µ', '-3': 'm', '0': '', '3': 'k', '6': 'M', '9': 'G', '12': 'T' };
+    var e = Math.floor(Math.log10(Math.abs(x)) / 3) * 3;
+    var v = Number((x / Math.pow(10, e)).toPrecision(digits));
+    if (Math.abs(v) >= 1000) { e += 3; v = Number((x / Math.pow(10, e)).toPrecision(digits)); }
+    if (e < -18 || e > 12) return x.toExponential(digits - 1).replace('e', ' × 10^') + ' ' + unit;
+    var s = v.toPrecision(digits);
+    if (s.indexOf('e') >= 0) s = String(v);
+    return s.replace('-', '−') + ' ' + P[String(e)] + unit;
+  }
+
+  /* HiDPI canvas that redraws on resize and theme change. draw(ctx, w, h) works in CSS pixels. */
+  function canvas(cv, draw) {
+    var ctx = cv.getContext('2d');
+    var o = { cv: cv, ctx: ctx, w: 0, h: 0 };
+    o.redraw = function () {
+      var r = cv.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      var dpr = window.devicePixelRatio || 1;
+      o.w = r.width; o.h = r.height;
+      cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw(ctx, o.w, o.h);
+    };
+    if (building) redraws[building].push(o.redraw);
+    return o;
+  }
+
+  /* Pointer dragging on a canvas. h.hit(x,y) returns an object or null; h.move(obj,x,y) updates it. */
+  function drag(cv, h) {
+    var active = null;
+    function pos(e) { var r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+    cv.addEventListener('pointerdown', function (e) {
+      var p = pos(e); active = h.hit(p.x, p.y);
+      if (active) { try { cv.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault(); cv.style.cursor = 'grabbing'; h.move(active, p.x, p.y); }
+    });
+    cv.addEventListener('pointermove', function (e) {
+      var p = pos(e);
+      if (active) h.move(active, p.x, p.y);
+      else cv.style.cursor = h.hit(p.x, p.y) ? 'grab' : 'default';
+    });
+    function end() { active = null; cv.style.cursor = 'default'; }
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+  }
+
+  function arrow(ctx, x1, y1, x2, y2, o) {
+    o = o || {};
+    var len = Math.hypot(x2 - x1, y2 - y1); if (len < 0.5) return;
+    var ux = (x2 - x1) / len, uy = (y2 - y1) / len, hd = Math.min(o.head || 9, len);
+    ctx.save();
+    ctx.strokeStyle = ctx.fillStyle = o.color || css('--ink');
+    ctx.lineWidth = o.width || 2; ctx.lineCap = 'butt';
+    if (o.dash) ctx.setLineDash(o.dash);
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - ux * hd * 0.8, y2 - uy * hd * 0.8); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - ux * hd - uy * hd * 0.45, y2 - uy * hd + ux * hd * 0.45);
+    ctx.lineTo(x2 - ux * hd + uy * hd * 0.45, y2 - uy * hd - ux * hd * 0.45);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  function font(px, weight) { return (weight || 400) + ' ' + px + 'px "IBM Plex Sans", system-ui, sans-serif'; }
+
+  function typeset(root) {
+    if (!window.katex) return;
+    root.querySelectorAll('.tex:not([data-done])').forEach(function (el) {
+      try {
+        katex.render(el.textContent, el, { output: 'mathml', displayMode: el.classList.contains('display'), throwOnError: false });
+        el.setAttribute('data-done', '1');
+      } catch (e) {}
+    });
+  }
+
+  function redrawCurrent() { (redraws[current] || []).forEach(function (f) { f(); }); }
+
+  function paintDone() {
+    var done = store.get('done', []);
+    document.querySelectorAll('.tab[data-id]').forEach(function (t) { t.classList.toggle('done', done.indexOf(t.getAttribute('data-id')) >= 0); });
+    document.querySelectorAll('.done-btn').forEach(function (b) {
+      var on = done.indexOf(b.getAttribute('data-done')) >= 0;
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.textContent = on ? 'Completed ✓ (undo)' : 'Mark lesson complete';
+    });
+  }
+
+  function show(id, scroll) {
+    var el = document.getElementById('view-' + id);
+    if (!el) { id = 'l1'; el = document.getElementById('view-' + id); }
+    if (!el) return;
+    document.querySelectorAll('.view').forEach(function (v) { v.hidden = v !== el; });
+    document.querySelectorAll('.tab').forEach(function (t) {
+      var on = t.getAttribute('href') === '#' + id;
+      if (on) { t.setAttribute('aria-current', 'page'); if (t.scrollIntoView) t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+      else t.removeAttribute('aria-current');
+    });
+    current = id;
+    if (inits[id] && !started[id]) {
+      started[id] = true; building = id; redraws[id] = [];
+      try { inits[id](el); } catch (e) { console.error('Lesson ' + id + ' failed to start', e); }
+      building = null;
+    }
+    redrawCurrent();
+    store.set('last', id);
+    if (scroll) window.scrollTo(0, 0);
+  }
+
+  function boot() {
+    typeset(document);
+    paintDone();
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.done-btn'); if (!b) return;
+      var id = b.getAttribute('data-done'), done = store.get('done', []), i = done.indexOf(id);
+      if (i >= 0) done.splice(i, 1); else done.push(id);
+      store.set('done', done); paintDone();
+    });
+    var first = true;
+    function route() {
+      var id = (location.hash || '').replace('#', '') || store.get('last', 'l1');
+      show(id, !first); first = false;
+    }
+    window.addEventListener('hashchange', route);
+    route();
+    var t; window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(redrawCurrent, 60); });
+    if (window.matchMedia) { var mq = matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', redrawCurrent); }
+    new MutationObserver(redrawCurrent).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(redrawCurrent);
+  }
+
+  return { register: function (id, fn) { inits[id] = fn; }, canvas: canvas, drag: drag, arrow: arrow, fmt: fmt, css: css, font: font, store: store, boot: boot };
+})();
+</script>
+
+<header class="top">
+  <div class="gutter"><div class="wrap">
+    <div class="brand"><span class="field">Electronics Foundations</span><a href="https://claude.ai/artifact/2TUmw3puBX7KfwkrF77vmr">All fields</a></div>
+    <nav class="tabs" aria-label="Lessons">
+      <a class="tab" href="#l1" data-id="l1" title="Charge, Coulomb's law and superposition"><span class="n"><span>1</span></span>Coulomb's law</a>
+      <a class="tab" href="#roadmap">Roadmap</a>
+    </nav>
+  </div></div>
+</header>
+
+<main class="page gutter"><div class="wrap">
+  <article class="view lesson" id="view-l1" hidden>
+
+    <header style="display:flex;flex-direction:column;gap:10px">
+      <span class="eyebrow">Lesson 1 · Electrostatics</span>
+      <h1>Charge, Coulomb's law and superposition</h1>
+      <p class="meta">About 14 minutes · two interactives · no prerequisites</p>
+    </header>
+
+    <h2><span class="eyebrow">Question</span>What is the force between charges at rest?</h2>
+    <p>Two charged objects at rest push or pull on each other across empty space. What exactly is that force: how does it depend on the amounts of charge, on the distance between them, and on direction? When more than two charges are present, how do the individual forces combine?</p>
+    <p>The electric field, voltage, capacitors and transistors are all built on the answer. This lesson differs from the ones that follow in one respect: nothing here is derived from a deeper law. Within classical physics these are the experimental facts from which the rest is derived. The task is to state them exactly and to understand what each part of the statement says.</p>
+
+    <h2><span class="eyebrow">Starting points</span>What experiment establishes about charge</h2>
+    <ul>
+      <li><strong>Two kinds.</strong> Matter carries a property, electric charge, that comes in two kinds. Two charges of the same kind repel; two of different kinds attract. Labelling the kinds positive and negative lets charge be a signed number <span class="tex">q</span> whose amounts add algebraically. Which kind is called positive is a convention; under it the electron is negative.</li>
+      <li><strong>Conserved.</strong> The total charge of an isolated system, the algebraic sum of all its charges, never changes. Charge can be moved, and it can be created or destroyed only in equal and opposite amounts.</li>
+      <li><strong>Quantized.</strong> Every free charge ever observed is an integer multiple of the elementary charge <span class="tex">e = 1.602\,176\,634 \times 10^{-19}\ \mathrm{C}</span>. Since 2019 this value is exact: it is what defines the coulomb. The proton carries <span class="tex">+e</span> and the electron <span class="tex">-e</span>, equal in magnitude to at least one part in <span class="tex">10^{20}</span>, which is why ordinary matter is so nearly neutral.</li>
+    </ul>
+    <p>From mechanics we take two things: force is a vector, and forces between two bodies at rest obey Newton's third law. We also use one idealization. A <strong>point charge</strong> is a charged object whose size is negligible compared with its distance from the other charges involved.</p>
+
+    <h2><span class="eyebrow">The law</span>Coulomb's law</h2>
+    <p>In 1785 Coulomb measured the force between small charged spheres with a torsion balance. For two point charges at rest in vacuum, <span class="tex">q_1</span> at position <span class="tex">\mathbf{r}_1</span> and <span class="tex">q_2</span> at <span class="tex">\mathbf{r}_2</span>, the force on <span class="tex">q_2</span> is</p>
+    <div class="tex display">\mathbf{F}_{2} \;=\; \frac{1}{4\pi\varepsilon_0}\,\frac{q_1 q_2}{r^{2}}\,\hat{\mathbf{r}}, \qquad r = |\mathbf{r}_2 - \mathbf{r}_1|, \qquad \hat{\mathbf{r}} = \frac{\mathbf{r}_2 - \mathbf{r}_1}{r}</div>
+    <p>Here <span class="tex">\hat{\mathbf{r}}</span> is the unit vector pointing from charge 1 toward charge 2. The force on <span class="tex">q_1</span> is equal and opposite, <span class="tex">\mathbf{F}_1 = -\mathbf{F}_2</span>. The constant <span class="tex">\varepsilon_0</span>, the vacuum permittivity, is measured:</p>
+    <div class="tex display">\varepsilon_0 = 8.854 \times 10^{-12}\ \mathrm{C^2\,N^{-1}\,m^{-2}}, \qquad \frac{1}{4\pi\varepsilon_0} = 8.988 \times 10^{9}\ \mathrm{N\,m^2\,C^{-2}}</div>
+    <p>Each part of the formula says something separate.</p>
+    <ul>
+      <li><strong>Direction: along the line joining the charges.</strong> Two points at rest in empty space single out exactly one direction, the line through them. A force component perpendicular to that line would have to point somewhere around it, and nothing in the situation selects where. The sign is carried by the product: if <span class="tex">q_1 q_2 > 0</span> the force on <span class="tex">q_2</span> is along <span class="tex">+\hat{\mathbf{r}}</span>, away from <span class="tex">q_1</span> (repulsion); if <span class="tex">q_1 q_2 \lt 0</span> it is toward <span class="tex">q_1</span> (attraction). One formula covers both cases.</li>
+      <li><strong>Proportional to each charge.</strong> This is tied to what "amount of charge" means. Charge is additive, and forces add (superposition, below). Two charges <span class="tex">q</span> placed together act as one charge <span class="tex">2q</span> and exert twice the force. So the force is proportional to <span class="tex">q_1</span> and, by the same argument, to <span class="tex">q_2</span>.</li>
+      <li><strong>Inverse square of the distance.</strong> This is an experimental result, and one of the most precisely tested in physics. If the force went as <span class="tex">1/r^{2+\delta}</span>, laboratory tests bound <span class="tex">|\delta|</span> to a few parts in <span class="tex">10^{16}</span>.</li>
+      <li><strong>The factor <span class="tex">4\pi</span>.</strong> It is a choice of units, made so that the area of a sphere, <span class="tex">4\pi r^2</span>, appears explicitly. Lesson 2 shows why that is natural: the inverse-square law is equivalent to a statement about closed surfaces surrounding the charge (Gauss's law).</li>
+    </ul>
+    <p>For computation it is convenient to remove the unit vector. This is the form the interactives below evaluate:</p>
+    <div class="tex display">\mathbf{F}_{2} \;=\; \frac{q_1 q_2}{4\pi\varepsilon_0}\,\frac{\mathbf{r}_2 - \mathbf{r}_1}{|\mathbf{r}_2 - \mathbf{r}_1|^{3}}</div>
+
+    <details class="predict">
+      <summary data-tag="Predict first">Two charges repel with force F. You halve the distance between them and also halve one of the charges. What is the new force?</summary>
+      <div class="ans"><p>Halving the distance multiplies the force by <span class="tex">1/(1/2)^2 = 4</span>. Halving one charge multiplies it by <span class="tex">1/2</span>. The new force is <span class="tex">2F</span>. Check it on the bench: set a configuration, note F, then change r and one charge.</p></div>
+    </details>
+
+    <figure class="bench">
+      <figcaption class="bench-title"><span>Bench 1 · Two point charges</span><span class="hint">Move the sliders</span></figcaption>
+      <div class="bench-grid">
+        <canvas id="l1-cvA" style="height:215px" role="img" aria-label="Two charges on a line with the force on each drawn as an arrow"></canvas>
+        <canvas id="l1-cvP" style="height:215px" role="img" aria-label="Log-log plot of force against distance"></canvas>
+      </div>
+      <div class="controls">
+        <label class="ctl"><span class="name">q₁</span><input type="range" id="l1-q1" min="-10" max="10" step="0.5" value="4"><output id="l1-q1o"></output></label>
+        <label class="ctl"><span class="name">q₂</span><input type="range" id="l1-q2" min="-10" max="10" step="0.5" value="4"><output id="l1-q2o"></output></label>
+        <label class="ctl"><span class="name">r</span><input type="range" id="l1-r" min="2" max="20" step="0.1" value="6"><output id="l1-ro"></output></label>
+      </div>
+      <dl class="readout">
+        <div><dt>Force on each charge, |F|</dt><dd id="l1-F"></dd></div>
+        <div><dt>Character</dt><dd id="l1-kind"></dd></div>
+        <div><dt>|F| · r² (does not depend on r)</dt><dd id="l1-Fr2"></dd></div>
+      </dl>
+      <p class="note">Positions are to scale. Arrow lengths are proportional to the logarithm of the force, because the force spans a factor of 100 over this range of r. On the right both axes are logarithmic, so an inverse-square law is a straight line of slope −2.</p>
+    </figure>
+
+    <h2><span class="eyebrow">Scale</span>How strong the electric force is</h2>
+    <p>In a hydrogen atom the electron and proton are about <span class="tex">5.29 \times 10^{-11}\ \mathrm{m}</span> apart. Coulomb's law gives</p>
+    <div class="tex display">F = \frac{1}{4\pi\varepsilon_0}\frac{e^2}{r^2} = \frac{(8.988\times10^{9})(1.602\times10^{-19})^2}{(5.29\times10^{-11})^2}\ \mathrm{N} \approx 8.2\times10^{-8}\ \mathrm{N}</div>
+    <p>That is small in everyday terms, but it acts on an electron of mass <span class="tex">9.11\times10^{-31}\ \mathrm{kg}</span>. Compare it with the gravitational attraction between the same two particles. Both forces fall as <span class="tex">1/r^2</span>, so their ratio is the same at every distance:</p>
+    <div class="tex display">\frac{F_\text{electric}}{F_\text{gravity}} = \frac{e^2/4\pi\varepsilon_0}{G\,m_e m_p} \approx 2.3\times10^{39}</div>
+    <p>The reason gravity dominates at large scales anyway is neutrality. Matter contains positive and negative charge in almost exactly equal amounts, so the electric forces of large bodies cancel almost completely, while mass has only one sign and always adds. The cancellation is delicate. Following an estimate in the Feynman Lectures: if two people at arm's length each had one percent more electrons than protons, each would carry roughly <span class="tex">3\times10^{7}\ \mathrm{C}</span> of excess charge, and the repulsion between them would be of order <span class="tex">10^{25}\ \mathrm{N}</span>, comparable to the weight of a mass equal to the Earth's at the Earth's surface (<span class="tex">6\times10^{25}\ \mathrm{N}</span>).</p>
+
+    <h2><span class="eyebrow">Second law</span>Superposition</h2>
+    <p>Coulomb's law speaks only about two charges. For more than two, experiment adds a separate fact, the <strong>principle of superposition</strong>: the force on a charge due to several others is the vector sum of the forces that each would exert if it were alone. The presence of a third charge does not alter the force between the first two.</p>
+    <p>For a charge <span class="tex">q_0</span> at <span class="tex">\mathbf{r}_0</span> and source charges <span class="tex">q_1, \dots, q_N</span> at <span class="tex">\mathbf{r}_1, \dots, \mathbf{r}_N</span>:</p>
+    <div class="tex display">\mathbf{F}_0 \;=\; \sum_{i=1}^{N} \frac{q_0\, q_i}{4\pi\varepsilon_0}\,\frac{\mathbf{r}_0 - \mathbf{r}_i}{|\mathbf{r}_0 - \mathbf{r}_i|^{3}}</div>
+    <p>Three things follow at once.</p>
+    <ul>
+      <li>Superposition is not a consequence of Coulomb's law. A world in which pairs obey Coulomb's law but a third charge modifies the pair force is logically possible. Experiment says ours is not like that.</li>
+      <li>The sum is over vectors. Magnitudes do not add; components do.</li>
+      <li><span class="tex">q_0</span> multiplies every term, so it factors out of the sum. What remains depends only on the source charges and on the point <span class="tex">\mathbf{r}_0</span>. That remaining vector is the electric field, the subject of Lesson 2.</li>
+    </ul>
+
+    <details class="predict">
+      <summary data-tag="Predict first">A charge of +4 nC and a charge of +1 nC are fixed 9 cm apart. Is there a point where a third charge feels no net force? Roughly where, and does it matter what the third charge is?</summary>
+      <div class="ans"><p>Use the "+4 and +1" preset on the bench and drag the test charge until the readout reports zero net force. Then switch the test charge to −1 nC or +2 nC and see whether the point moves. The worked answer is in "Check yourself", question 1.</p></div>
+    </details>
+
+    <figure class="bench">
+      <figcaption class="bench-title"><span>Bench 2 · Superposition</span><span class="hint">Drag any charge</span></figcaption>
+      <canvas id="l1-cvB" class="draggable" style="height:370px" role="img" aria-label="Source charges and a test charge with individual and net force vectors"></canvas>
+      <div class="controls">
+        <div class="seg" id="l1-presets" role="group" aria-label="Arrangement of source charges">
+          <button type="button" id="l1-p-equal" data-p="equal" aria-pressed="true">Two equal (+, +)</button>
+          <button type="button" id="l1-p-dipole" data-p="dipole" aria-pressed="false">Opposite (+, −)</button>
+          <button type="button" id="l1-p-four" data-p="four" aria-pressed="false">+4 and +1</button>
+          <button type="button" id="l1-p-tri" data-p="tri" aria-pressed="false">Three charges</button>
+        </div>
+        <label style="display:flex;gap:8px;align-items:center">Test charge q₀
+          <select id="l1-q0"><option value="1">+1 nC</option><option value="2">+2 nC</option><option value="-1">−1 nC</option></select>
+        </label>
+      </div>
+      <dl class="readout" id="l1-roB"></dl>
+      <p class="note">Positions are to scale (grid squares are 2 cm). Arrows are drawn to a common linear scale, reset so that the longest arrow has a fixed length; the dashed path adds the individual forces tip to tail and ends at the tip of the net force. Charges cannot be brought closer than 1.2 cm.</p>
+    </figure>
+
+    <h2><span class="eyebrow">Result</span>What is now established</h2>
+    <div class="law">
+      <p><strong>Coulomb's law.</strong> Two point charges at rest in vacuum exert on each other a force along the line joining them, proportional to the product of the charges and to the inverse square of their separation, repulsive for like signs and attractive for unlike signs.</p>
+      <p><strong>Superposition.</strong> With several charges present, the force on any one is the vector sum of the Coulomb forces from each of the others.</p>
+    </div>
+    <p class="limits"><strong>Limits of validity.</strong> Charges at rest: moving charges also exert magnetic forces, and changes propagate at finite speed (Lessons 9 to 12). Point charges, or bodies small compared with their separation: for extended bodies, apply the law to each element of charge and sum. Vacuum: inside matter the surrounding charges respond and must be included (Lesson 8). Superposition is exact in classical electrodynamics; quantum electrodynamics predicts departures only at field strengths of order <span class="tex">10^{18}\ \mathrm{V/m}</span>, far beyond anything in a circuit.</p>
+
+    <h2><span class="eyebrow">Connections</span>Where this leads</h2>
+    <ul>
+      <li><span class="planned">Electronics Foundations 2: The electric field and Gauss's law (not built yet)</span>. Dividing out the test charge turns the force law into a field defined at every point.</li>
+      <li><span class="planned">Astrophysics 1: Newtonian gravity: the other inverse-square law (not built yet)</span>. Newton's law of gravitation has the same inverse-square form, so every mathematical result of the next lessons (field, Gauss's law, potential) carries over to gravity with mass in place of charge and one sign instead of two.</li>
+      <li><span class="planned">Chip Making 2: Doping, carriers and the p-n junction (not built yet)</span>. The Coulomb attraction between an electron and an ionized dopant atom, weakened by the surrounding silicon, sets how easily dopants give up their carriers.</li>
+    </ul>
+
+    <h2><span class="eyebrow">Check yourself</span>Three questions</h2>
+    <details class="check">
+      <summary data-tag="1">Charges of +4 nC at x = 0 and +1 nC at x = 9 cm are fixed. Where on the line between them is the net force on a third charge zero? Does the answer depend on the third charge? Is the third charge in stable equilibrium there?</summary>
+      <div class="ans">
+        <p>Between the charges the two forces on the third charge are opposite in direction. They cancel where the magnitudes are equal:</p>
+        <div class="tex display">\frac{4}{x^2} = \frac{1}{(9\ \mathrm{cm} - x)^2} \;\Rightarrow\; \frac{x}{9\ \mathrm{cm} - x} = 2 \;\Rightarrow\; x = 6\ \mathrm{cm}</div>
+        <p>The third charge <span class="tex">q_0</span> multiplies both terms and cancels, so the point is the same for any <span class="tex">q_0</span> of either sign. On Bench 2 this point is 1.5 cm to the right of centre.</p>
+        <p>Stability: a positive <span class="tex">q_0</span> displaced along the line is pushed back, but displaced sideways it is pushed further out. A negative <span class="tex">q_0</span> behaves the opposite way. In neither case is the equilibrium stable in all directions. Lesson 2 shows this is general: no arrangement of fixed charges can hold another charge in stable equilibrium in empty space.</p>
+      </div>
+    </details>
+    <details class="check">
+      <summary data-tag="2">Two identical small metal spheres carry +6 nC and −2 nC and attract each other with force F at separation r. They are touched together and returned to the same separation r, which is large compared with their size. What is the force now?</summary>
+      <div class="ans">
+        <p>Charge is conserved: the total is <span class="tex">+4\ \mathrm{nC}</span>. The spheres are identical, so by symmetry each ends with <span class="tex">+2\ \mathrm{nC}</span>. Before, the product of the charges was <span class="tex">-12\ \mathrm{nC^2}</span>; after, it is <span class="tex">+4\ \mathrm{nC^2}</span>. The force is now repulsive with magnitude <span class="tex">F/3</span>.</p>
+      </div>
+    </details>
+    <details class="check">
+      <summary data-tag="3">On Bench 2 with two equal positive charges, the test charge sits on the perpendicular bisector. Each source alone exerts a force of magnitude F₁ on it. Why is the net force less than 2F₁, and in which direction does it point?</summary>
+      <div class="ans">
+        <p>Forces add as vectors. By the mirror symmetry of the arrangement, the components along the line joining the sources are equal and opposite and cancel; the components along the bisector are equal and add. If each force makes angle <span class="tex">\theta</span> with the bisector, the net force is <span class="tex">2F_1\cos\theta</span>, directed along the bisector away from the sources. It equals <span class="tex">2F_1</span> only in the limit of large distance, where <span class="tex">\theta \to 0</span> and the pair acts as a single charge of twice the size.</p>
+      </div>
+    </details>
+
+    <h2><span class="eyebrow">Build spark</span>Measure the inverse-square law yourself</h2>
+    <p>A balance that resolves 0.001 g resolves a force of about <span class="tex">10^{-5}\ \mathrm{N}</span>, which is the size of the forces on Bench 1. Rest a small metallised sphere on an insulating post on the balance pan, hold an identical one on an insulating rod directly above it, charge both by touching them with the same charged object, and record the change in reading against the gap. Plot force against distance on log-log axes and measure the slope. The departures from −2 are instructive: at small gaps the spheres are not point charges, and charge leaks away over minutes in humid air.</p>
+
+    <h2><span class="eyebrow">Sources</span>What this lesson follows</h2>
+    <ul class="sources">
+      <li><b>Feynman, Leighton, Sands,</b> <cite>The Feynman Lectures on Physics</cite>, Vol. II, §1-1 "Electrical forces" and §4-2 "Coulomb's law; superposition".</li>
+      <li><b>Purcell and Morin,</b> <cite>Electricity and Magnetism</cite>, 3rd ed., §1.1 to §1.4 (charge, conservation, quantization, Coulomb's law, including the experimental limits on the inverse-square exponent and on charge neutrality).</li>
+      <li><b>Griffiths,</b> <cite>Introduction to Electrodynamics</cite>, 4th ed., §2.1.1 and §2.1.2.</li>
+      <li><b>MIT OpenCourseWare 8.02,</b> course notes, chapter 2 "Coulomb's Law".</li>
+      <li><b>Williams, Faller and Hill,</b> Physical Review Letters 26, 721 (1971): the laboratory bound on departures from the inverse-square law.</li>
+      <li><b>NIST CODATA 2022</b> values of <span class="tex">e</span> (exact) and <span class="tex">\varepsilon_0 = 8.854\,187\,8188(14)\times10^{-12}\ \mathrm{F/m}</span>, checked on 14 November 2026.</li>
+    </ul>
+
+<script>
+LD.register('l1', function (root) {
+  var EPS0 = 8.8541878188e-12, K = 1 / (4 * Math.PI * EPS0);       // N m^2 / C^2
+  var $ = function (id) { return root.querySelector('#l1-' + id); };
+  function sgn(q) { return (q > 0 ? '+' : q < 0 ? '−' : '') + Math.abs(q); }
+  function chargeColor(q) { return q > 0 ? LD.css('--pos') : q < 0 ? LD.css('--neg') : LD.css('--muted'); }
+  function dot(ctx, x, y, r, q) {
+    ctx.fillStyle = chargeColor(q); ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = LD.css('--surface'); ctx.font = LD.font(r * 1.35, 600); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(q > 0 ? '+' : q < 0 ? '−' : '', x, y + 0.5);
+  }
+
+  /* ---------------- Bench 1: two charges ---------------- */
+  var A = { q1: 4, q2: 4, r: 6 };                                    // nC, nC, cm
+  function forceA() { return K * (A.q1 * 1e-9) * (A.q2 * 1e-9) / Math.pow(A.r * 1e-2, 2); }   // N, positive = repulsive
+
+  var cvA = LD.canvas($('cvA'), function (ctx, w, h) {
+    var ink = LD.css('--ink'), muted = LD.css('--muted'), line = LD.css('--line');
+    var cy = 100, s = (w - 90) / 20, x1 = w / 2 - A.r * s / 2, x2 = w / 2 + A.r * s / 2;
+    ctx.strokeStyle = line; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(16, cy); ctx.lineTo(w - 16, cy); ctx.stroke();
+    var F = forceA();
+    if (F !== 0) {
+      var L = Math.max(12, 12 + 11 * (Math.log10(Math.abs(F)) + 7.3)), d = F > 0 ? 1 : -1;
+      ctx.strokeStyle = muted; ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.moveTo(x1, cy); ctx.lineTo(x1, cy - 30); ctx.moveTo(x2, cy); ctx.lineTo(x2, cy + 30); ctx.stroke();
+      ctx.setLineDash([]);
+      LD.arrow(ctx, x1, cy - 30, x1 - d * L, cy - 30, { color: ink, width: 2.5 });
+      LD.arrow(ctx, x2, cy + 30, x2 + d * L, cy + 30, { color: ink, width: 2.5 });
+    }
+    dot(ctx, x1, cy, 9, A.q1); dot(ctx, x2, cy, 9, A.q2);
+    ctx.font = LD.font(12, 500); ctx.textBaseline = 'alphabetic'; ctx.fillStyle = ink;
+    ctx.textAlign = 'center';
+    ctx.fillText('q₁ = ' + sgn(A.q1) + ' nC', Math.max(46, x1), cy + 54);
+    ctx.fillText('q₂ = ' + sgn(A.q2) + ' nC', Math.min(w - 46, x2), cy - 48);
+    ctx.strokeStyle = muted; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x1, cy + 74); ctx.lineTo(x2, cy + 74);
+    ctx.moveTo(x1, cy + 69); ctx.lineTo(x1, cy + 79); ctx.moveTo(x2, cy + 69); ctx.lineTo(x2, cy + 79); ctx.stroke();
+    ctx.fillStyle = muted; ctx.font = LD.font(12);
+    ctx.fillText('r = ' + A.r.toFixed(1) + ' cm', w / 2, cy + 94);
+  });
+
+  var cvP = LD.canvas($('cvP'), function (ctx, w, h) {
+    var ink = LD.css('--ink'), muted = LD.css('--muted'), line = LD.css('--line'), acc = LD.css('--accent');
+    var m = { l: 58, r: 14, t: 14, b: 38 }, pw = w - m.l - m.r, ph = h - m.t - m.b;
+    var lx0 = Math.log10(2), lx1 = Math.log10(20), ly0 = -8, ly1 = -2;
+    function X(rcm) { return m.l + (Math.log10(rcm) - lx0) / (lx1 - lx0) * pw; }
+    function Y(F) { return m.t + (ly1 - Math.log10(F)) / (ly1 - ly0) * ph; }
+    ctx.font = LD.font(11); ctx.lineWidth = 1;
+    ctx.strokeStyle = line; ctx.fillStyle = muted; ctx.textBaseline = 'middle'; ctx.textAlign = 'right';
+    for (var e = ly0; e <= ly1; e++) {
+      var y = Y(Math.pow(10, e));
+      ctx.beginPath(); ctx.moveTo(m.l, y); ctx.lineTo(m.l + pw, y); ctx.stroke();
+      ctx.fillText(LD.fmt(Math.pow(10, e), 'N', 1), m.l - 6, y);
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    [2, 5, 10, 20].forEach(function (r) {
+      var x = X(r);
+      ctx.beginPath(); ctx.moveTo(x, m.t); ctx.lineTo(x, m.t + ph); ctx.stroke();
+      ctx.fillText(r + ' cm', x, m.t + ph + 6);
+    });
+    ctx.fillText('distance r (log scale)', m.l + pw / 2, m.t + ph + 21);
+    var kq = K * Math.abs(A.q1 * A.q2) * 1e-18;                      // N m^2
+    if (kq === 0) {
+      ctx.fillStyle = ink; ctx.font = LD.font(13); ctx.textBaseline = 'middle';
+      ctx.fillText('No force: one charge is zero', m.l + pw / 2, m.t + ph / 2);
+      return;
+    }
+    function Fat(rcm) { return kq / Math.pow(rcm * 1e-2, 2); }
+    ctx.strokeStyle = acc; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(X(2), Y(Fat(2))); ctx.lineTo(X(20), Y(Fat(20))); ctx.stroke();
+    var px = X(A.r), py = Y(Fat(A.r));
+    ctx.strokeStyle = muted; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, m.t + ph); ctx.moveTo(px, py); ctx.lineTo(m.l, py); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = acc; ctx.beginPath(); ctx.arc(px, py, 5, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = LD.css('--surface'); ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = ink; ctx.font = LD.font(11, 500); ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillText('|F| against r, slope −2', m.l + pw - 6, m.t + 6);
+  });
+
+  function updateA() {
+    A.q1 = +$('q1').value; A.q2 = +$('q2').value; A.r = +$('r').value;
+    $('q1o').textContent = sgn(A.q1) + ' nC'; $('q2o').textContent = sgn(A.q2) + ' nC'; $('ro').textContent = A.r.toFixed(1) + ' cm';
+    var F = forceA();
+    $('F').textContent = LD.fmt(Math.abs(F), 'N');
+    $('kind').textContent = F > 0 ? 'Repulsive (like signs)' : F < 0 ? 'Attractive (unlike signs)' : 'No force';
+    $('Fr2').textContent = LD.fmt(Math.abs(F) * Math.pow(A.r * 1e-2, 2), 'N·m²');
+    cvA.redraw(); cvP.redraw();
+  }
+  ['q1', 'q2', 'r'].forEach(function (id) { $(id).addEventListener('input', updateA); });
+  updateA();
+
+  /* ---------------- Bench 2: superposition ---------------- */
+  var PRESETS = {
+    equal:  { src: [{ q: 4, x: -4.5, y: 0 }, { q: 4, x: 4.5, y: 0 }], test: { x: 0, y: 4 } },
+    dipole: { src: [{ q: 4, x: -4.5, y: 0 }, { q: -4, x: 4.5, y: 0 }], test: { x: 0, y: 4 } },
+    four:   { src: [{ q: 4, x: -4.5, y: 0 }, { q: 1, x: 4.5, y: 0 }], test: { x: 0, y: 3 } },
+    tri:    { src: [{ q: 3, x: -5, y: -3 }, { q: 3, x: 5, y: -3 }, { q: -3, x: 0, y: 5 }], test: { x: 0, y: 0 } }
+  };
+  var B = { q0: 1, src: [], test: { x: 0, y: 4 } }, G = { s: 20, w: 0, h: 0 }, MIN = 1.2, SUB = ['₁', '₂', '₃'];
+
+  function label(ctx, text, x, y, w, h) { ctx.fillText(text, Math.max(22, Math.min(w - 22, x)), Math.max(12, Math.min(h - 12, y))); }
+
+  function forcesB() {
+    return B.src.map(function (c) {
+      var dx = (B.test.x - c.x) * 1e-2, dy = (B.test.y - c.y) * 1e-2, d = Math.hypot(dx, dy);
+      var k = K * (B.q0 * 1e-9) * (c.q * 1e-9) / (d * d * d);
+      return { x: k * dx, y: k * dy, mag: Math.abs(k) * d };
+    });
+  }
+
+  var cvB = LD.canvas($('cvB'), function (ctx, w, h) {
+    var ink = LD.css('--ink'), muted = LD.css('--muted'), grid = LD.css('--sunken'), acc = LD.css('--accent');
+    var s = Math.min(w / 22, h / 15); G.s = s; G.w = w; G.h = h;
+    function X(x) { return w / 2 + x * s; } function Y(y) { return h / 2 - y * s; }
+    ctx.strokeStyle = grid; ctx.lineWidth = 1; ctx.beginPath();
+    for (var gx = 0; gx * s < w / 2; gx += 2) { ctx.moveTo(X(gx), 0); ctx.lineTo(X(gx), h); ctx.moveTo(X(-gx), 0); ctx.lineTo(X(-gx), h); }
+    for (var gy = 0; gy * s < h / 2; gy += 2) { ctx.moveTo(0, Y(gy)); ctx.lineTo(w, Y(gy)); ctx.moveTo(0, Y(-gy)); ctx.lineTo(w, Y(-gy)); }
+    ctx.stroke();
+
+    var fs = forcesB(), net = { x: 0, y: 0 }, sum = 0, big = 0;
+    fs.forEach(function (f) { net.x += f.x; net.y += f.y; sum += f.mag; big = Math.max(big, f.mag); });
+    var nmag = Math.hypot(net.x, net.y); big = Math.max(big, nmag);
+    var sc = big > 0 ? 85 / big : 0, tx = X(B.test.x), ty = Y(B.test.y), balanced = nmag < 0.03 * sum;
+
+    if (fs.length > 1) {                                             // tip-to-tail construction
+      ctx.strokeStyle = muted; ctx.lineWidth = 1; ctx.setLineDash([4, 4]); ctx.beginPath();
+      var cx = tx, cyy = ty; ctx.moveTo(cx, cyy);
+      fs.forEach(function (f) { cx += f.x * sc; cyy -= f.y * sc; ctx.lineTo(cx, cyy); });
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.font = LD.font(12, 500); ctx.textBaseline = 'middle';
+    fs.forEach(function (f, i) {
+      var ex = tx + f.x * sc, ey = ty - f.y * sc, col = chargeColor(B.src[i].q);
+      LD.arrow(ctx, tx, ty, ex, ey, { color: col, width: 2 });
+      var u = f.mag * sc; if (u < 14) return;
+      var ux = f.x * sc / u, uy = -f.y * sc / u;                     // screen-space unit vector
+      ctx.fillStyle = col; ctx.textAlign = 'center';                 // label beside the shaft, on its right-hand side
+      label(ctx, 'F' + SUB[i], tx + ux * u * 0.6 - uy * 13, ty + uy * u * 0.6 + ux * 13, w, h);
+    });
+    if (!balanced) {
+      var nx = tx + net.x * sc, ny = ty - net.y * sc, nu = nmag * sc, vx = net.x * sc / nu, vy = -net.y * sc / nu;
+      LD.arrow(ctx, tx, ty, nx, ny, { color: ink, width: 3.5, head: 12 });
+      ctx.fillStyle = ink; ctx.font = LD.font(12, 600); ctx.textAlign = 'center';   // label beside the tip, on the left-hand side
+      label(ctx, 'F net', nx - vx * 8 + vy * 24, ny - vy * 8 - vx * 18, w, h);
+    }
+    B.src.forEach(function (c, i) {
+      dot(ctx, X(c.x), Y(c.y), 12, c.q);
+      ctx.fillStyle = ink; ctx.font = LD.font(12, 500); ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText('q' + SUB[i] + ' = ' + sgn(c.q) + ' nC', X(c.x), Y(c.y) + 17);
+    });
+    ctx.fillStyle = LD.css('--surface'); ctx.strokeStyle = balanced ? LD.css('--ok') : acc; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(tx, ty, 7, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    if (balanced) { ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(tx, ty, 16, 0, 2 * Math.PI); ctx.stroke(); }
+    ctx.fillStyle = balanced ? LD.css('--ok') : acc; ctx.font = LD.font(12, 600); ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText(balanced ? 'q₀: net force ≈ 0' : 'q₀', tx + 12, ty - 9);
+
+    ctx.strokeStyle = muted; ctx.lineWidth = 1.5; ctx.beginPath();
+    ctx.moveTo(14, h - 16); ctx.lineTo(14 + 2 * s, h - 16); ctx.moveTo(14, h - 20); ctx.lineTo(14, h - 12); ctx.moveTo(14 + 2 * s, h - 20); ctx.lineTo(14 + 2 * s, h - 12); ctx.stroke();
+    ctx.fillStyle = muted; ctx.font = LD.font(11); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('2 cm', 20 + 2 * s, h - 16);
+
+    var html = fs.map(function (f, i) { return '<div><dt>|F' + SUB[i] + '|, from q' + SUB[i] + '</dt><dd>' + LD.fmt(f.mag, 'N') + '</dd></div>'; }).join('');
+    html += '<div><dt>Net force, x and y components</dt><dd>' + LD.fmt(net.x, 'N') + ', ' + LD.fmt(net.y, 'N') + '</dd></div>';
+    html += '<div><dt>Net force, magnitude</dt><dd class="' + (balanced ? 'flag' : '') + '">' + LD.fmt(nmag, 'N') + (balanced ? ' (balanced)' : '') + '</dd></div>';
+    $('roB').innerHTML = html;
+  });
+
+  function all() { return B.src.concat([B.test]); }
+  function place(o, x, y) {
+    var hw = G.w / 2 / G.s - 0.8, hh = G.h / 2 / G.s - 0.8;
+    for (var pass = 0; pass < 4; pass++) {
+      all().forEach(function (p) {
+        if (p === o) return;
+        if (o !== B.test && p !== B.test) return;                    // only test-source pairs must stay apart
+        var dx = x - p.x, dy = y - p.y, d = Math.hypot(dx, dy);
+        if (d < MIN) { if (d < 1e-6) { dx = 1; dy = 0; d = 1; } x = p.x + dx / d * MIN; y = p.y + dy / d * MIN; }
+      });
+      x = Math.max(-hw, Math.min(hw, x)); y = Math.max(-hh, Math.min(hh, y));
+    }
+    var ok = all().every(function (p) { return p === o || (o !== B.test && p !== B.test) || Math.hypot(x - p.x, y - p.y) >= MIN - 1e-6; });
+    if (ok) { o.x = x; o.y = y; }
+  }
+  LD.drag($('cvB'), {
+    hit: function (px, py) {
+      var best = null, bd = 24;
+      all().forEach(function (p) { var d = Math.hypot(px - (G.w / 2 + p.x * G.s), py - (G.h / 2 - p.y * G.s)); if (d < bd) { bd = d; best = p; } });
+      return best;
+    },
+    move: function (o, px, py) { place(o, (px - G.w / 2) / G.s, (G.h / 2 - py) / G.s); cvB.redraw(); }
+  });
+
+  function preset(name) {
+    B.src = PRESETS[name].src.map(function (c) { return { q: c.q, x: c.x, y: c.y }; });
+    B.test = { x: PRESETS[name].test.x, y: PRESETS[name].test.y };
+    root.querySelectorAll('#l1-presets button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-p') === name ? 'true' : 'false'); });
+    cvB.redraw();
+  }
+  $('presets').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) preset(b.getAttribute('data-p')); });
+  $('q0').addEventListener('change', function () { B.q0 = +this.value; cvB.redraw(); });
+  B.q0 = +$('q0').value;
+  preset('equal');
+});
+</script>
+
+    <footer class="lesson-end wide">
+      <button type="button" class="done-btn" id="l1-done" data-done="l1" aria-pressed="false">Mark lesson complete</button>
+      <span class="next">Next in this field: <strong>The electric field and Gauss's law</strong>. It is built when you ask for the next Electronics Foundations lesson.</span>
+    </footer>
+  </article>
+  <section class="view" id="view-roadmap" hidden>
+    <h1>Roadmap</h1>
+    <p>Charge, fields and Maxwell's equations, then circuits as an approximation of them. 1 of 18 lessons are built. A new lesson is added as a tab here each time one is requested.</p>
+    <ol class="roadmap wide">
+      <li class="built"><span class="n">01</span><span><a href="#l1">Charge, Coulomb's law and superposition</a><span class="x">Connects to Astrophysics 1</span></span><span class="st">Built</span></li>
+      <li class=""><span class="n">02</span><span>The electric field and Gauss's law<span class="x">Connects to Astrophysics 1</span></span><span class="st">Planned</span></li>
+      <li class=""><span class="n">03</span><span>Electric potential: work, energy per charge, and what voltage is</span><span class="st">Planned</span></li>
+      <li class=""><span class="n">04</span><span>Conductors in equilibrium and surface charge</span><span class="st">Planned</span></li>
+      <li class=""><span class="n">05</span><span>Current, current density and charge conservation</span><span class="st">Planned</span></li>
+      <li class=""><span class="n">06</span><span>Conduction in matter: the Drude model and Ohm's law as a material property<span class="x">Connects to Chip Making 1</span></span><span class="st">Planned</span></li>
+      <li class=""><span class="n">07</span><span>Resistance, Joule heating and the surface charges that guide current</span><span class="st">Planned</span></li>
+      <li class=""><span class="n">08</span><span>Capacitance: energy stored in the electric field, and dielectrics<span class="x">Connects to Power Electronics 2</span></span><span class="st">Planned</span></li>
+      <li class=""><span class="n">09</span><span>The magnetic field of currents: Biot-Savart and Ampère's law<span class="x">Connects to Robotics 2</span></span><span class="st">Planned</span></li>
+      <li class=""><span class="n">10</span><span>Faraday's law and induced EMF<span class="x">Connects to Robotics 2, Automobiles 2</span></span><span class="st">Planned</span></li>
+      <li class=""><span class="n">11</span><span>Inductance: energy stored in the magnetic field<span class="x">Connects to Power Electronics 2</span></span><span class="st">Planned</span></li>
+      <li class=""><span class="n">12</span><span>Maxwell's equations complete: displacement current<span class="x">Connects to Astrophysics 3</span></span><span class="st">Planned</span></li>
+      <li class=""><span class="n">13</span><span>Energy flow: the Poynting vector and where circuit energy travels</span><span class="st">Planned</span></li>
+      <li class=""><span class="n">14</span><span>The lumped-element approximation: when Kirchhoff's laws hold and when they fail<span class="x">Connects to Analog Design 1</span></span><span class="st">Planned</span></li>
+      <li class=""><span class="n">15</span><span>RC, RL and LC from the field equations: time constants and oscillation<span class="x">Connects to Mathematics 3, Robotics 3</span></span><span class="st">Planned</span></li>
+      <li class=""><span class="n">16</span><span>Semiconductors, the p-n junction and the diode<span class="x">Connects to Chip Making 2</span></span><span class="st">Planned</span></li>
+      <li class=""><span class="n">17</span><span>The MOSFET from the field effect<span class="x">Connects to Chip Making 3, Analog Design 2</span></span><span class="st">Planned</span></li>
+      <li class=""><span class="n">18</span><span>Switch, inductor and capacitor: the buck converter<span class="x">Connects to Power Electronics 1</span></span><span class="st">Planned</span></li>
+    </ol>
+  </section>
+</div></main>
+
+<script>LD.boot();</script>

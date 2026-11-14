@@ -1,0 +1,310 @@
+<title>%%TRACK_NAME%%</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+%%BASE_CSS%%
+
+/* ---------- lesson strip ---------- */
+.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: thin; font-family: var(--font-ui); }
+.tab {
+  flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 12px 9px;
+  font-size: 14px; color: var(--muted); text-decoration: none; white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+.tab:hover { color: var(--ink); }
+.tab[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 500; }
+.tab .n {
+  font-family: var(--font-mono); font-size: 12px; min-width: 22px; height: 22px; padding: 0 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); border-radius: 50%; color: var(--muted);
+}
+.tab.done .n { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.tab.done .n::after { content: "\2713"; }
+.tab.done .n span { display: none; }
+
+/* ---------- lesson text ---------- */
+.page { padding-block: 32px 72px; }
+.view > * { max-width: 68ch; }
+.view > .bench, .view > .wide { max-width: none; }
+.lesson { display: flex; flex-direction: column; gap: 18px; }
+.lesson h1 { font-size: clamp(28px, 5vw, 38px); letter-spacing: -0.01em; }
+.lesson .meta { font-family: var(--font-ui); font-size: 13px; color: var(--muted); }
+.lesson h2 { font-size: 22px; margin-top: 30px; }
+.lesson h3 { font-size: 16px; margin-top: 10px; }
+.lesson ul, .lesson ol { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 8px; }
+.lesson li { padding-left: 2px; }
+.lesson strong { font-weight: 600; }
+.tex.display { display: block; overflow-x: auto; overflow-y: hidden; padding: 6px 0; text-align: left; }
+math { font-size: 1.08em; }
+.tex.display math { font-size: 1.22em; }
+
+.law {
+  border-left: 3px solid var(--accent); background: var(--surface); padding: 14px 18px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.limits { font-size: 15.5px; color: var(--muted); }
+.planned { color: var(--muted); }
+.sources { font-size: 15px; }
+.sources li { color: var(--muted); }
+.sources li cite, .sources li b { color: var(--ink); font-weight: 400; }
+
+/* ---------- predict / check ---------- */
+details.predict, details.check {
+  border: 1px solid var(--line); border-radius: 6px; background: var(--surface);
+}
+details.predict > summary, details.check > summary {
+  cursor: pointer; padding: 12px 16px; list-style: none; display: flex; gap: 12px; align-items: baseline;
+}
+details > summary::-webkit-details-marker { display: none; }
+details.predict > summary::before, details.check > summary::before {
+  content: attr(data-tag); flex: none; font-family: var(--font-ui); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent);
+}
+details.predict > summary::after, details.check > summary::after {
+  content: "Show answer"; margin-left: auto; flex: none; font-family: var(--font-ui); font-size: 12.5px; color: var(--accent);
+  text-decoration: underline; text-underline-offset: 2px;
+}
+details[open].predict > summary::after, details[open].check > summary::after { content: "Hide"; }
+details .ans { padding: 12px 16px 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+@media (max-width: 520px) {
+  details.predict > summary, details.check > summary { flex-wrap: wrap; }
+  details.predict > summary::before, details.check > summary::before { width: 100%; }
+}
+
+/* ---------- bench (interactive panel) ---------- */
+.bench {
+  margin: 8px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+  display: flex; flex-direction: column; font-family: var(--font-ui); font-size: 14px; line-height: 1.45;
+}
+.bench-title {
+  padding: 10px 16px; border-bottom: 1px solid var(--line); font-weight: 600; font-size: 13px;
+  letter-spacing: 0.02em; display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: space-between; align-items: baseline;
+}
+.bench-title .hint { font-weight: 400; color: var(--muted); }
+.bench-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.bench-grid > * { min-width: 0; }
+.bench canvas { display: block; width: 100%; background: var(--surface); }
+.bench canvas.draggable { touch-action: none; }
+.bench-grid canvas + canvas { border-left: 1px solid var(--line); }
+@media (max-width: 640px) { .bench-grid canvas + canvas { border-left: 0; border-top: 1px solid var(--line); } }
+.controls {
+  display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 14px 16px; border-top: 1px solid var(--line); align-items: center;
+}
+.ctl { display: grid; grid-template-columns: auto minmax(110px, 1fr) 76px; gap: 10px; align-items: center; flex: 1 1 240px; min-width: 0; }
+.ctl .name { font-weight: 500; }
+.ctl output { font-family: var(--font-mono); font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
+.ctl input[type="range"] { width: 100%; accent-color: var(--accent); min-width: 0; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button, .bench select {
+  font: inherit; font-size: 13px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 4px;
+  background: var(--bg); color: var(--ink); cursor: pointer;
+}
+.seg button:hover { border-color: var(--accent); }
+.seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.readout {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line);
+  border-top: 1px solid var(--line); margin: 0;
+}
+.readout > div { background: var(--surface); padding: 10px 16px; min-width: 0; }
+.readout dt { font-size: 12px; color: var(--muted); }
+.readout dd { margin: 2px 0 0; font-family: var(--font-mono); font-size: 14.5px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.readout dd.flag { color: var(--ok); }
+.bench .note { padding: 10px 16px 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+
+/* ---------- lesson end / roadmap ---------- */
+.lesson-end {
+  margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: center; font-family: var(--font-ui); font-size: 14px;
+}
+.done-btn {
+  font: inherit; font-weight: 500; padding: 9px 16px; border-radius: 4px; cursor: pointer;
+  background: var(--accent); color: var(--on-accent); border: 1px solid var(--accent);
+}
+.done-btn[aria-pressed="true"] { background: transparent; color: var(--accent); }
+.lesson-end .next { color: var(--muted); flex: 1 1 260px; min-width: 0; }
+
+.roadmap { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; font-family: var(--font-ui); font-size: 15px; }
+.roadmap li { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+.roadmap .n { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.roadmap .st { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.roadmap li.built .st { color: var(--ok); }
+.roadmap .x { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
+#view-roadmap { display: flex; flex-direction: column; gap: 16px; }
+#view-roadmap h1 { font-size: 30px; }
+
+@media (prefers-reduced-motion: no-preference) { .tab, .seg button, .done-btn { transition: color .12s, background-color .12s, border-color .12s; } }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script>
+/* LD: shared helpers for every lesson in this field. */
+window.LD = (function () {
+  var KEY = 'ld:%%TRACK_ID%%';
+  var inits = {}, started = {}, redraws = {}, building = null, current = null;
+
+  var store = {
+    get: function (k, d) { try { var v = localStorage.getItem(KEY + ':' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set: function (k, v) { try { localStorage.setItem(KEY + ':' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  /* Format a number with an SI prefix: fmt(3.99e-5, 'N') -> "39.9 µN" */
+  function fmt(x, unit, digits) {
+    digits = digits || 3; unit = unit || '';
+    if (!isFinite(x)) return '—';
+    if (x === 0) return '0 ' + unit;
+    var P = { '-18': 'a', '-15': 'f', '-12': 'p', '-9': 'n', '-6': 'µ', '-3': 'm', '0': '', '3': 'k', '6': 'M', '9': 'G', '12': 'T' };
+    var e = Math.floor(Math.log10(Math.abs(x)) / 3) * 3;
+    var v = Number((x / Math.pow(10, e)).toPrecision(digits));
+    if (Math.abs(v) >= 1000) { e += 3; v = Number((x / Math.pow(10, e)).toPrecision(digits)); }
+    if (e < -18 || e > 12) return x.toExponential(digits - 1).replace('e', ' × 10^') + ' ' + unit;
+    var s = v.toPrecision(digits);
+    if (s.indexOf('e') >= 0) s = String(v);
+    return s.replace('-', '−') + ' ' + P[String(e)] + unit;
+  }
+
+  /* HiDPI canvas that redraws on resize and theme change. draw(ctx, w, h) works in CSS pixels. */
+  function canvas(cv, draw) {
+    var ctx = cv.getContext('2d');
+    var o = { cv: cv, ctx: ctx, w: 0, h: 0 };
+    o.redraw = function () {
+      var r = cv.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      var dpr = window.devicePixelRatio || 1;
+      o.w = r.width; o.h = r.height;
+      cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw(ctx, o.w, o.h);
+    };
+    if (building) redraws[building].push(o.redraw);
+    return o;
+  }
+
+  /* Pointer dragging on a canvas. h.hit(x,y) returns an object or null; h.move(obj,x,y) updates it. */
+  function drag(cv, h) {
+    var active = null;
+    function pos(e) { var r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+    cv.addEventListener('pointerdown', function (e) {
+      var p = pos(e); active = h.hit(p.x, p.y);
+      if (active) { try { cv.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault(); cv.style.cursor = 'grabbing'; h.move(active, p.x, p.y); }
+    });
+    cv.addEventListener('pointermove', function (e) {
+      var p = pos(e);
+      if (active) h.move(active, p.x, p.y);
+      else cv.style.cursor = h.hit(p.x, p.y) ? 'grab' : 'default';
+    });
+    function end() { active = null; cv.style.cursor = 'default'; }
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+  }
+
+  function arrow(ctx, x1, y1, x2, y2, o) {
+    o = o || {};
+    var len = Math.hypot(x2 - x1, y2 - y1); if (len < 0.5) return;
+    var ux = (x2 - x1) / len, uy = (y2 - y1) / len, hd = Math.min(o.head || 9, len);
+    ctx.save();
+    ctx.strokeStyle = ctx.fillStyle = o.color || css('--ink');
+    ctx.lineWidth = o.width || 2; ctx.lineCap = 'butt';
+    if (o.dash) ctx.setLineDash(o.dash);
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - ux * hd * 0.8, y2 - uy * hd * 0.8); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - ux * hd - uy * hd * 0.45, y2 - uy * hd + ux * hd * 0.45);
+    ctx.lineTo(x2 - ux * hd + uy * hd * 0.45, y2 - uy * hd - ux * hd * 0.45);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  function font(px, weight) { return (weight || 400) + ' ' + px + 'px "IBM Plex Sans", system-ui, sans-serif'; }
+
+  function typeset(root) {
+    if (!window.katex) return;
+    root.querySelectorAll('.tex:not([data-done])').forEach(function (el) {
+      try {
+        katex.render(el.textContent, el, { output: 'mathml', displayMode: el.classList.contains('display'), throwOnError: false });
+        el.setAttribute('data-done', '1');
+      } catch (e) {}
+    });
+  }
+
+  function redrawCurrent() { (redraws[current] || []).forEach(function (f) { f(); }); }
+
+  function paintDone() {
+    var done = store.get('done', []);
+    document.querySelectorAll('.tab[data-id]').forEach(function (t) { t.classList.toggle('done', done.indexOf(t.getAttribute('data-id')) >= 0); });
+    document.querySelectorAll('.done-btn').forEach(function (b) {
+      var on = done.indexOf(b.getAttribute('data-done')) >= 0;
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.textContent = on ? 'Completed ✓ (undo)' : 'Mark lesson complete';
+    });
+  }
+
+  function show(id, scroll) {
+    var el = document.getElementById('view-' + id);
+    if (!el) { id = '%%FIRST_ID%%'; el = document.getElementById('view-' + id); }
+    if (!el) return;
+    document.querySelectorAll('.view').forEach(function (v) { v.hidden = v !== el; });
+    document.querySelectorAll('.tab').forEach(function (t) {
+      var on = t.getAttribute('href') === '#' + id;
+      if (on) { t.setAttribute('aria-current', 'page'); if (t.scrollIntoView) t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+      else t.removeAttribute('aria-current');
+    });
+    current = id;
+    if (inits[id] && !started[id]) {
+      started[id] = true; building = id; redraws[id] = [];
+      try { inits[id](el); } catch (e) { console.error('Lesson ' + id + ' failed to start', e); }
+      building = null;
+    }
+    redrawCurrent();
+    store.set('last', id);
+    if (scroll) window.scrollTo(0, 0);
+  }
+
+  function boot() {
+    typeset(document);
+    paintDone();
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.done-btn'); if (!b) return;
+      var id = b.getAttribute('data-done'), done = store.get('done', []), i = done.indexOf(id);
+      if (i >= 0) done.splice(i, 1); else done.push(id);
+      store.set('done', done); paintDone();
+    });
+    var first = true;
+    function route() {
+      var id = (location.hash || '').replace('#', '') || store.get('last', '%%FIRST_ID%%');
+      show(id, !first); first = false;
+    }
+    window.addEventListener('hashchange', route);
+    route();
+    var t; window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(redrawCurrent, 60); });
+    if (window.matchMedia) { var mq = matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', redrawCurrent); }
+    new MutationObserver(redrawCurrent).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(redrawCurrent);
+  }
+
+  return { register: function (id, fn) { inits[id] = fn; }, canvas: canvas, drag: drag, arrow: arrow, fmt: fmt, css: css, font: font, store: store, boot: boot };
+})();
+</script>
+
+<header class="top">
+  <div class="gutter"><div class="wrap">
+    <div class="brand"><span class="field">%%TRACK_NAME%%</span>%%HOME_LINK%%</div>
+    <nav class="tabs" aria-label="Lessons">
+%%TABS%%
+      <a class="tab" href="#roadmap">Roadmap</a>
+    </nav>
+  </div></div>
+</header>
+
+<main class="page gutter"><div class="wrap">
+%%VIEWS%%
+  <section class="view" id="view-roadmap" hidden>
+    <h1>Roadmap</h1>
+    <p>%%TRACK_SUMMARY%% %%BUILT_COUNT%% of %%TOTAL_COUNT%% lessons are built. A new lesson is added as a tab here each time one is requested.</p>
+    <ol class="roadmap wide">
+%%ROADMAP%%
+    </ol>
+  </section>
+</div></main>
+
+<script>LD.boot();</script>
