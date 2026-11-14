@@ -1,6 +1,6 @@
 {
-  "repo": null,
-  "site": null,
+  "repo": "https://github.com/qaziuzi/feynmen.git",
+  "site": "https://qaziuzi.github.io/feynmen/",
   "tracks": [
     { "id": "electronics", "name": "Electronics Foundations", "summary": "Charge, fields and Maxwell's equations, then circuits as an approximation of them.", "roadmap": "detailed" },
     { "id": "power-electronics", "name": "Power Electronics", "summary": "Converting electrical energy efficiently with switches, inductors and capacitors.", "roadmap": "seed" },

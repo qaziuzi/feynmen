@@ -5,6 +5,7 @@ A skill for Claude that teaches physics and engineering from first principles, t
 - **Lessons are derived, not asserted.** Each one starts from the governing laws, relies only on earlier lessons, uses no loose analogies, computes real numbers in its interactives, and cites standard university textbooks by section.
 - **You learn in your own artifact.** One page per field, one tab per lesson, 10 to 15 minutes each.
 - **A lesson is written once.** If the database has it, Claude assembles it for you from the stored file. If not, Claude writes it to the same standard and can offer it back to the database for review.
+nRead the lessons without Claude at **https://qaziuzi.github.io/feynmen/**.
 
 Fields so far: electronics, power electronics, analog design, chip making, robotics, astrophysics, rockets, automobiles, mathematics, how AI works.
 
@@ -16,9 +17,9 @@ Fields so far: electronics, power electronics, analog design, chip making, robot
 
 ## Install
 
-**Claude Code.** Copy the folder `.claude/skills/learning-database` into `~/.claude/skills/` (for all your projects) or into a project's `.claude/skills/`. Needs Node.js 18 or newer.
+**Claude Code.** Clone this repo and copy the folder `.claude/skills/learning-database` into `~/.claude/skills/` (for all your projects) or into a project's `.claude/skills/`. Needs Node.js 18 or newer.
 
-**Claude chat (claude.ai and the apps).** Download `learning-database.zip` from the releases page, or build it with `node tools/package.mjs`, and upload it under Settings → Capabilities → Skills. Code execution must be enabled.
+**Claude chat (claude.ai and the apps).** Download [learning-database.zip](https://qaziuzi.github.io/feynmen/learning-database.zip), or build it with `node tools/package.mjs`, and upload it under Settings → Capabilities → Skills. Code execution must be enabled.
 
 What differs in Claude chat: progress is not remembered between chats (tell Claude where you are), new shared lessons arrive when you install a newer zip, and Claude cannot submit a lesson for you.
 
