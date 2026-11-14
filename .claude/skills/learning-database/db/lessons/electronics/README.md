@@ -1,6 +1,6 @@
 # Electronics Foundations
 
-Order, prerequisites and status live in `graph/concepts.json` (concepts `e01` to `e18`). This file holds the intent and the primary references.
+Order and prerequisites live in `db/graph.json` (concepts `e01` to `e18`). This file holds the intent and the primary references.
 
 ## Intent
 

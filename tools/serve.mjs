@@ -1,10 +1,11 @@
-// Minimal static server for local previews: node tools/serve.mjs  ->  http://localhost:4173
+// Local preview of the public site. First: node .claude/skills/learning-database/scripts/ld.mjs site --out build/site
+// Then: node tools/serve.mjs  ->  http://localhost:4173
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'build', 'site');
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
 
 http.createServer((req, res) => {

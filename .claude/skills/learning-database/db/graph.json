@@ -1,0 +1,73 @@
+{
+  "repo": null,
+  "site": null,
+  "tracks": [
+    { "id": "electronics", "name": "Electronics Foundations", "summary": "Charge, fields and Maxwell's equations, then circuits as an approximation of them.", "roadmap": "detailed" },
+    { "id": "power-electronics", "name": "Power Electronics", "summary": "Converting electrical energy efficiently with switches, inductors and capacitors.", "roadmap": "seed" },
+    { "id": "analog-design", "name": "Analog Design", "summary": "Amplifiers, feedback, noise and stability from device physics upward.", "roadmap": "seed" },
+    { "id": "chip-making", "name": "Chip Making", "summary": "Semiconductor physics, devices and the fabrication steps that build them.", "roadmap": "seed" },
+    { "id": "robotics", "name": "Robotics", "summary": "Mechanics, actuators, sensing and feedback control of machines that move.", "roadmap": "seed" },
+    { "id": "astrophysics", "name": "Astrophysics", "summary": "Gravity, orbits, radiation and the physics of stars.", "roadmap": "seed" },
+    { "id": "rockets", "name": "Rockets", "summary": "Momentum conservation, the rocket equation, nozzles and orbital mechanics.", "roadmap": "seed" },
+    { "id": "automobiles", "name": "Automobiles", "summary": "Engines, electric drivetrains, tyres and vehicle dynamics.", "roadmap": "seed" },
+    { "id": "maths", "name": "Mathematics", "summary": "Calculus, linear algebra, differential equations, probability and statistics.", "roadmap": "seed" },
+    { "id": "ai", "name": "How AI Works", "summary": "From a single neuron and gradient descent to attention and transformers.", "roadmap": "seed" }
+  ],
+  "concepts": [
+    { "id": "e01", "track": "electronics", "n": 1, "title": "Charge, Coulomb's law and superposition", "covers": "electric charge, coulomb force, inverse square law, superposition, permittivity, elementary charge, electrostatic force", "prereqs": [], "links": ["as01"] },
+    { "id": "e02", "track": "electronics", "n": 2, "title": "The electric field and Gauss's law", "covers": "electric field, field lines, flux, gauss law, divergence, earnshaw theorem, field of sphere plane line", "prereqs": ["e01"], "links": ["as01"] },
+    { "id": "e03", "track": "electronics", "n": 3, "title": "Electric potential: work, energy per charge, and what voltage is", "covers": "voltage, potential, potential difference, work, potential energy, gradient, equipotential, volt, conservative field", "prereqs": ["e02"], "links": [] },
+    { "id": "e04", "track": "electronics", "n": 4, "title": "Conductors in equilibrium and surface charge", "covers": "conductor, electrostatic equilibrium, shielding, faraday cage, surface charge, induced charge, field inside metal", "prereqs": ["e03"], "links": [] },
+    { "id": "e05", "track": "electronics", "n": 5, "title": "Current, current density and charge conservation", "covers": "current, ampere, current density, continuity equation, charge conservation, drift, kirchhoff current law origin", "prereqs": ["e04"], "links": [] },
+    { "id": "e06", "track": "electronics", "n": 6, "title": "Conduction in matter: the Drude model and Ohm's law as a material property", "covers": "ohm's law, conductivity, resistivity, drude model, drift velocity, mobility, collisions, why metals conduct", "prereqs": ["e05"], "links": ["c01"] },
+    { "id": "e07", "track": "electronics", "n": 7, "title": "Resistance, Joule heating and the surface charges that guide current", "covers": "resistor, resistance, power dissipation, joule heating, P=IV, surface charge in circuits, how a wire carries field", "prereqs": ["e06"], "links": [] },
+    { "id": "e08", "track": "electronics", "n": 8, "title": "Capacitance: energy stored in the electric field, and dielectrics", "covers": "capacitor, capacitance, farad, energy in electric field, dielectric, polarization, permittivity, parallel plate, why capacitor blocks dc", "prereqs": ["e04"], "links": ["p02"] },
+    { "id": "e09", "track": "electronics", "n": 9, "title": "The magnetic field of currents: Biot-Savart and Ampère's law", "covers": "magnetic field, lorentz force, biot-savart, ampere law, solenoid, tesla, force on a wire, curl", "prereqs": ["e05"], "links": ["r02"] },
+    { "id": "e10", "track": "electronics", "n": 10, "title": "Faraday's law and induced EMF", "covers": "induction, faraday law, lenz law, emf, magnetic flux, generator, transformer principle, eddy currents", "prereqs": ["e09"], "links": ["r02", "au02"] },
+    { "id": "e11", "track": "electronics", "n": 11, "title": "Inductance: energy stored in the magnetic field", "covers": "inductor, inductance, henry, energy in magnetic field, self induction, mutual inductance, why inductor resists current change", "prereqs": ["e10"], "links": ["p02"] },
+    { "id": "e12", "track": "electronics", "n": 12, "title": "Maxwell's equations complete: displacement current", "covers": "maxwell equations, displacement current, electromagnetic waves, speed of light, ampere-maxwell law", "prereqs": ["e08", "e10"], "links": ["as03"] },
+    { "id": "e13", "track": "electronics", "n": 13, "title": "Energy flow: the Poynting vector and where circuit energy travels", "covers": "poynting vector, energy flow, energy density, power in fields, energy travels outside the wire", "prereqs": ["e12", "e07"], "links": [] },
+    { "id": "e14", "track": "electronics", "n": 14, "title": "The lumped-element approximation: when Kirchhoff's laws hold and when they fail", "covers": "kirchhoff voltage law, kirchhoff current law, lumped element, circuit theory limits, transmission line, quasi-static", "prereqs": ["e13"], "links": ["an01"] },
+    { "id": "e15", "track": "electronics", "n": 15, "title": "RC, RL and LC from the field equations: time constants and oscillation", "covers": "rc circuit, rl circuit, lc circuit, time constant, resonance, exponential decay, filter, oscillator, impedance", "prereqs": ["e14", "e11"], "links": ["m03", "r03"] },
+    { "id": "e16", "track": "electronics", "n": 16, "title": "Semiconductors, the p-n junction and the diode", "covers": "semiconductor, band gap, doping, pn junction, depletion region, diode, rectifier, shockley equation", "prereqs": ["e06", "e03"], "links": ["c02"] },
+    { "id": "e17", "track": "electronics", "n": 17, "title": "The MOSFET from the field effect", "covers": "transistor, mosfet, field effect, gate, threshold voltage, inversion layer, switch, amplifier", "prereqs": ["e16", "e08"], "links": ["c03", "an02"] },
+    { "id": "e18", "track": "electronics", "n": 18, "title": "Switch, inductor and capacitor: the buck converter", "covers": "buck converter, switching regulator, duty cycle, pwm, dc-dc conversion", "prereqs": ["e15", "e17"], "links": ["p01"] },
+
+    { "id": "p01", "track": "power-electronics", "n": 1, "title": "Why switch: the efficiency limit of linear regulation", "covers": "linear regulator, efficiency, switching converter, losses", "prereqs": ["e18"], "links": [] },
+    { "id": "p02", "track": "power-electronics", "n": 2, "title": "Volt-second and charge balance", "covers": "volt-second balance, charge balance, steady state, boost converter, buck-boost", "prereqs": ["p01"], "links": [] },
+    { "id": "p03", "track": "power-electronics", "n": 3, "title": "Magnetics: cores, saturation and loss", "covers": "magnetic core, saturation, hysteresis, core loss, transformer design, ferrite", "prereqs": ["p02"], "links": [] },
+
+    { "id": "an01", "track": "analog-design", "n": 1, "title": "Linear circuits, small signals and superposition", "covers": "small signal, linearization, thevenin, norton, superposition in circuits", "prereqs": ["e14"], "links": [] },
+    { "id": "an02", "track": "analog-design", "n": 2, "title": "The transistor as a transconductor", "covers": "transconductance, gm, common source amplifier, gain, output resistance", "prereqs": ["e17"], "links": [] },
+    { "id": "an03", "track": "analog-design", "n": 3, "title": "Feedback, loop gain and stability", "covers": "negative feedback, op amp, loop gain, phase margin, stability, bode plot", "prereqs": ["an02"], "links": ["r03"] },
+
+    { "id": "c01", "track": "chip-making", "n": 1, "title": "Crystals, energy bands and why silicon", "covers": "crystal lattice, energy bands, band gap, silicon, conductor insulator semiconductor", "prereqs": [], "links": [] },
+    { "id": "c02", "track": "chip-making", "n": 2, "title": "Doping, carriers and the p-n junction", "covers": "doping, donors, acceptors, electrons and holes, carrier concentration, junction", "prereqs": ["c01"], "links": [] },
+    { "id": "c03", "track": "chip-making", "n": 3, "title": "Building a MOSFET: oxidation, lithography, implantation, etch", "covers": "fabrication, lithography, euv, oxidation, ion implantation, etching, deposition, wafer", "prereqs": ["c02"], "links": [] },
+
+    { "id": "r01", "track": "robotics", "n": 1, "title": "Rigid-body motion: position, orientation and Newton-Euler", "covers": "rigid body, rotation matrix, torque, moment of inertia, kinematics, dynamics", "prereqs": [], "links": ["m02"] },
+    { "id": "r02", "track": "robotics", "n": 2, "title": "The electric motor: torque from the Lorentz force, back-EMF from Faraday", "covers": "dc motor, bldc, torque constant, back emf, motor equation, actuator", "prereqs": ["e10"], "links": [] },
+    { "id": "r03", "track": "robotics", "n": 3, "title": "Feedback control: error, dynamics and stability", "covers": "pid, control loop, feedback, stability, transfer function, servo", "prereqs": ["r01"], "links": [] },
+
+    { "id": "as01", "track": "astrophysics", "n": 1, "title": "Newtonian gravity: the other inverse-square law", "covers": "gravity, newton law of gravitation, gravitational field, shell theorem", "prereqs": [], "links": ["e01"] },
+    { "id": "as02", "track": "astrophysics", "n": 2, "title": "Orbits and Kepler's laws from conservation laws", "covers": "orbit, kepler laws, angular momentum, ellipse, escape velocity", "prereqs": ["as01"], "links": ["k02"] },
+    { "id": "as03", "track": "astrophysics", "n": 3, "title": "Light as an electromagnetic wave; black-body radiation", "covers": "electromagnetic wave, spectrum, black body, planck law, stellar temperature", "prereqs": ["e12"], "links": [] },
+
+    { "id": "k01", "track": "rockets", "n": 1, "title": "Momentum conservation and the rocket equation", "covers": "tsiolkovsky rocket equation, thrust, exhaust velocity, specific impulse, mass ratio", "prereqs": [], "links": [] },
+    { "id": "k02", "track": "rockets", "n": 2, "title": "Orbital mechanics: delta-v and transfer orbits", "covers": "delta-v, hohmann transfer, orbital velocity, staging", "prereqs": ["k01", "as02"], "links": [] },
+    { "id": "k03", "track": "rockets", "n": 3, "title": "Nozzles: turning heat into directed momentum", "covers": "de laval nozzle, supersonic flow, combustion chamber, expansion ratio", "prereqs": ["k01"], "links": [] },
+
+    { "id": "au01", "track": "automobiles", "n": 1, "title": "Forces on a vehicle: traction, drag and rolling resistance", "covers": "traction, aerodynamic drag, rolling resistance, tyre friction, power required", "prereqs": [], "links": [] },
+    { "id": "au02", "track": "automobiles", "n": 2, "title": "Electric drivetrains: motor, inverter and battery", "covers": "electric vehicle, inverter, battery, regenerative braking, motor drive", "prereqs": ["r02"], "links": ["p01"] },
+    { "id": "au03", "track": "automobiles", "n": 3, "title": "Heat engines and the limits set by thermodynamics", "covers": "otto cycle, carnot efficiency, internal combustion engine, thermodynamics", "prereqs": [], "links": ["k03"] },
+
+    { "id": "m01", "track": "maths", "n": 1, "title": "The derivative and the integral as limits", "covers": "calculus, derivative, integral, limit, fundamental theorem of calculus", "prereqs": [], "links": [] },
+    { "id": "m02", "track": "maths", "n": 2, "title": "Vectors, linear maps and matrices", "covers": "linear algebra, vector, matrix, linear transformation, eigenvalue", "prereqs": [], "links": [] },
+    { "id": "m03", "track": "maths", "n": 3, "title": "Linear differential equations and the exponential", "covers": "differential equation, exponential, complex exponential, euler formula, laplace", "prereqs": ["m01"], "links": [] },
+    { "id": "m04", "track": "maths", "n": 4, "title": "Probability, expectation and the central limit theorem", "covers": "probability, statistics, expectation, variance, normal distribution, central limit theorem", "prereqs": ["m01"], "links": ["ai01"] },
+
+    { "id": "ai01", "track": "ai", "n": 1, "title": "A model as a function with parameters; loss and gradient descent", "covers": "machine learning, model, parameters, loss function, gradient descent, training", "prereqs": [], "links": ["m01", "m02"] },
+    { "id": "ai02", "track": "ai", "n": 2, "title": "Neural networks and backpropagation as the chain rule", "covers": "neural network, neuron, backpropagation, chain rule, activation function", "prereqs": ["ai01"], "links": [] },
+    { "id": "ai03", "track": "ai", "n": 3, "title": "Attention and the transformer", "covers": "attention, transformer, llm, large language model, tokens, embeddings, gpt", "prereqs": ["ai02"], "links": [] }
+  ]
+}

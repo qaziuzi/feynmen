@@ -271,7 +271,8 @@ window.LD = (function () {
     });
     var first = true;
     function route() {
-      var id = (location.hash || '').replace('#', '') || store.get('last', '%%FIRST_ID%%');
+      /* Order: tab named in the link, then the tab this build was asked to open on, then the last tab viewed. */
+      var id = (location.hash || '').replace('#', '') || (first && '%%START_ID%%') || store.get('last', '%%FIRST_ID%%');
       show(id, !first); first = false;
     }
     window.addEventListener('hashchange', route);
@@ -300,7 +301,7 @@ window.LD = (function () {
 %%VIEWS%%
   <section class="view" id="view-roadmap" hidden>
     <h1>Roadmap</h1>
-    <p>%%TRACK_SUMMARY%% %%BUILT_COUNT%% of %%TOTAL_COUNT%% lessons are built. A new lesson is added as a tab here each time one is requested.</p>
+    <p>%%TRACK_SUMMARY%% %%BUILT_COUNT%% of %%TOTAL_COUNT%% lessons are written. Ask Claude for the next lesson, or for any concept, and it is added as a tab here.</p>
     <ol class="roadmap wide">
 %%ROADMAP%%
     </ol>
