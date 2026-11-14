@@ -1,63 +1,72 @@
 # Concept cards
 
-A card teaches one idea in three to five minutes. Example: `examples/coulomb.md`.
+A card teaches one concept in 10 to 15 minutes, deeply and precisely, in the chat. Model card: `examples/coulomb.md`. Match its depth, precision and interactivity; never ship something thinner.
 
-## Why cards look like this
+## The standard
 
-- **One idea.** Working memory holds about four chunks; a card that teaches two ideas teaches neither well. If you need a second idea, it is the next card.
-- **Start from what they know.** The big-picture lines link the new idea to cards the learner already has. New knowledge sticks when it attaches to old.
-- **Words and a picture together.** The text gives the causal story; the visual lets them see and steer it. Never put the explanation inside the visual.
-- **Predict, then see.** Asking for a guess before the slider moves makes the answer memorable, right or wrong.
-- **Recall later, not now.** Each card has one recall question, asked once days later. Retrieval after a gap is what makes knowledge last. Keep it to one optional line.
-- **Short.** The learner has little time. A card that respects that gets opened again.
+- **Depth over brevity.** Explain every part of the idea: what it says, why each part is the way it is, how big the effect is in the real world, and where it stops being true. A learner should finish able to explain it to someone else.
+- **First principles.** Build from the governing physical laws (charge and fields, Newton, conservation of energy and momentum, thermodynamics). Say plainly when something is an experimental fact rather than a consequence of something deeper.
+- **Precise and correct.** Real terms, defined once in plain words. Real numbers with units. Simplify by leaving things out, never by saying something false.
+- **No analogies unless exact.** No water pipes, no "think of it like". A shared mathematical form (gravity and electric force are both inverse-square) may be pointed out because it is exact.
+- **Maths on request.** No equations in the card. State relationships in precise words ("twice as far, a quarter of the force"; "a straight line of slope −2 on log-log axes"). Each visual has a "Show me the maths ↗" button; when pressed, derive it step by step in the reply.
+- **Authoritative sources.** Standard university texts and courses (see `fields.md`), by chapter or section. Never blogs or forums. Check every number you state and every number a visual computes; check claims against the online sources (feynmanlectures.caltech.edu, ocw.mit.edu, physics.nist.gov) when you can, and say which were checked.
 
-## Text (in the reply)
+## Why it is shaped this way
 
-1. **The question.** One or two sentences: a concrete puzzle the idea answers.
-2. **Big picture.** Two or three sentences: where this sits, why it matters, which of their cards it builds on.
-3. **How it works.** Four to seven short bullets: the physical cause-and-effect chain from first principles, in plain words. No equations. Proportional statements in words are fine ("twice as far, a quarter of the force").
-4. **Predict first.** One question about what the visual will show.
-5. *(the visual)*
-6. **Takeaway.** One sentence.
-7. **Sources.** One line, chapter or section.
+- **Connect to what they know.** Open by placing the idea among cards the learner already has. New knowledge sticks when it attaches to old.
+- **Predict, then see.** Each visual is preceded by a concrete prediction question. A guess made before the answer makes the answer memorable, right or wrong.
+- **Words and pictures together.** The text carries the reasoning; the visuals let the learner operate the mechanism. Never move the explanation into the visual.
+- **Test, then space.** End with three questions that test understanding, answered by clicking. One recall question comes back days later.
 
-About 200 to 350 words of text in total.
+## Card text and visuals, in order
 
-## Rules that make cards trustworthy
+1. **The question.** A concrete puzzle the concept answers.
+2. **Big picture.** Where it sits, why it matters, which of the learner's cards it builds on.
+3. **Starting points.** The laws, facts and earlier cards it rests on.
+4. **The idea, part by part.** Bullets that take each part of the idea in turn and say why it is so.
+5. **Predict first**, then **visual 1**: the main mechanism, with sliders and a live plot or readouts.
+6. **Scale and consequences.** Real magnitudes, a surprising consequence, the answer to the prediction.
+7. A second aspect of the concept, a **prediction**, then **visual 2**: something the learner drags or builds.
+8. **Result.** The idea stated exactly in two or three sentences.
+9. **Where it stops being true.** Limits of validity.
+10. **Check yourself**, then **visual 3**: three multiple-choice questions with explanations on click.
+11. **Where it leads.** Links to other fields and to the next concepts.
+12. **Build spark.** One concrete thing to build or measure.
+13. **Sources.** One line.
 
-- **First principles.** Explain from the governing physical laws (charge and fields, Newton, conservation of energy and momentum, thermodynamics). Say when something is an experimental fact rather than a consequence.
-- **Correct before simple.** Simplify by leaving things out, never by saying something false. No statement that later has to be unlearned.
-- **No analogies unless exact.** No water pipes or "think of it like". A shared mathematical form (gravity and electric force are both inverse-square) may be pointed out because it is exact.
-- **Precise words.** Use the real term, define it once in plain words, then keep using it.
-- **Authoritative sources.** Standard university texts and courses: Feynman Lectures, Purcell & Morin, Griffiths, MIT OCW, Horowitz & Hill, Sedra & Smith, Erickson & Maksimović, Sze, Kleppner & Kolenkow, Lynch & Park, Åström & Murray, Sutton, Curtis, Strang, Goodfellow et al. (see `fields.md`). Never blogs or forums.
-- **Check numbers.** Recompute every number in the text and in the visual.
-- **Maths on request.** When asked, derive step by step in the reply. Do not add the derivation to the card.
+Typically 900 to 1,300 words of text and three visuals.
 
-## The visual
+## The visuals
 
-One interactive visual that lets the learner operate the mechanism: a slider that changes the cause, and the effect visibly responding.
+- Follow the inline visual tool's design rules (its `read_me`): flat, sentence case, CSS variables for colour, dark mode works.
+- Make them rich: two linked panels (for example a scene and a live plot), several controls, presets, dragging, stat tiles. A single slider panel is not enough for a main visual.
+- They compute the real physics in real units. Anything not to scale says so in one short note line.
+- Each ends with buttons that call `sendPrompt`, class `ld-ask`: "Show me the maths ↗" and "Next: <concept> ↗", plus a local Reset.
+- **So they also work in the notebook page:** prefix every element id with a short card prefix (`c1-`, `c2-`…), wrap the script in a function, and use only these variables: `--text-primary --text-secondary --text-muted --text-accent --text-success --text-danger --bg-accent --bg-success --bg-danger --border --border-strong --surface-1 --surface-2 --radius --font-sans`; only the SVG text classes `t ts th`; fixed hex colours only for physical meaning (positive charge `#D85A30`, negative `#378ADD`). Set colours with `style="fill:…;stroke:…"`. Read element sizes only inside event handlers (for example `getScreenCTM` when dragging).
 
-- Follow the inline visual tool's design rules (its `read_me`): flat, sentence case, CSS variables for every colour, dark mode works, 680 px wide SVG viewBox.
-- It computes the real physics in real units. If something is not to scale, say so in a short label.
-- Readouts: at most three small stat tiles. No paragraphs inside the visual.
-- End with buttons using `sendPrompt`, class `ld-ask`: "Show me the maths ↗", "Next: <next concept> ↗", "Quiz me ↗". Plus a local Reset if there are sliders.
-- **So it also works in the notebook page:** prefix every element id with the card id (`cl-` for coulomb), wrap the script in a function, use only these variables: `--text-primary --text-secondary --text-muted --border --border-strong --surface-1 --surface-2 --bg-accent --text-accent --radius --font-sans`, only the SVG classes `t ts th box arr leader` and `c-gray c-teal c-coral c-blue c-amber c-purple`, fixed hex colours only for physical meaning, and never read element sizes in script (use viewBox coordinates).
-
-## Card file (saved to the learner's database)
+## Card file
 
 ```
 ---
-id: coulomb                     short, lowercase, hyphens; unique
+id: coulomb
 title: Coulomb's law
-field: electronics              one of the fields in fields.md, or a new one
-builds_on: superposition, electric-field    ids of the learner's cards it rests on (may be empty)
-leads_to: electric-field        ids or plain names of natural next concepts
-recall: the one recall question
-answer: its answer, one or two sentences
+field: electronics
+builds_on: ids of the learner's cards it rests on (comma-separated, may be empty)
+leads_to: next concepts
+recall: one recall question for later
+answer: its answer
 sources: one line
 ---
-(the card text, in Markdown, exactly as shown in the reply)
+(Markdown text exactly as shown in the reply)
 
 <!-- widget -->
-(the visual's code, exactly as shown)
+(visual 1 code, exactly as shown)
+<!-- /widget -->
+
+(more text)
+
+<!-- widget -->
+(visual 2 code)
+<!-- /widget -->
+...
 ```

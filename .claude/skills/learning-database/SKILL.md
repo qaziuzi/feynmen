@@ -1,11 +1,11 @@
 ---
 name: learning-database
-description: Teach physics, engineering, mathematics and AI from first principles as short concept cards with one interactive visual, shown inline in the chat, and grow the learner's own learning database from what they ask. Use when the user asks a deep "why/how does X work" question in physics, electronics, power electronics, analog design, chips, robotics, astrophysics, rockets, automobiles, mathematics or AI; says they want to learn or understand a concept; asks for the next lesson in a field ("next electronics lesson", "surprise me"); or asks to review what they have learned.
+description: Teach physics, engineering, mathematics and AI from first principles as detailed concept cards with interactive visuals, shown inline in the chat, and grow the learner's own learning database from what they ask. Use when the user asks a deep "why/how does X work" question in physics, electronics, power electronics, analog design, chips, robotics, astrophysics, rockets, automobiles, mathematics or AI; says they want to learn or understand a concept; asks for the next lesson in a field ("next electronics lesson", "surprise me"); or asks to review what they have learned.
 ---
 
 # Learning Database
 
-Each learner builds their own learning database, one concept card at a time, driven by what they ask. A card is one idea, three to five minutes: a few short paragraphs from first principles plus one interactive visual, shown **in the chat**. No fixed curriculum, no long lessons, no maths unless the learner asks for it.
+Each learner builds their own learning database, one concept card at a time, driven by what they ask. A card is one concept, 10 to 15 minutes: a detailed first-principles explanation in the chat, with three interactive visuals placed through it. No fixed curriculum and no equations unless the learner asks for the maths; depth and precision are never cut.
 
 Read `reference/card.md` before writing your first card in a conversation. It holds the card format, the rules that make cards trustworthy (first principles, no misleading analogies, real sources), and the rules for the visual.
 
@@ -43,13 +43,13 @@ From `list <field>`, pick the most natural next concept after what they have, us
 
 ## Writing and showing a card
 
-1. Write the card text in your reply: question, big picture, how it works, predict prompt (format in `reference/card.md`).
-2. Show the visual with the inline visual tool (`show_widget`, after its `read_me`). In Claude chat without that tool, use an artifact.
-3. End with the one-sentence takeaway and the one-line sources.
-4. **Claude Code:** save the card file (`~/.learning-database/inbox/<id>.md`, same text and the same widget code) and run `save` on it, then `notebook` and republish the notebook artifact to its saved link (`artifact` stores a new link). Do this quietly; a one-line mention is enough.
+1. Follow the order in `reference/card.md`: write each part of the text in your reply and place each visual where the card calls for it.
+2. Show each visual with the inline visual tool (`show_widget`, after its `read_me`). In Claude chat without that tool, use one artifact holding the visuals.
+3. End with where it leads, the build spark and the one-line sources.
+4. **Claude Code:** save the card file (`~/.learning-database/inbox/<id>.md`, the same text and the same visual code, each visual between `<!-- widget -->` and `<!-- /widget -->`) and run `save` on it, then `notebook` and republish the notebook artifact to its saved link (`artifact` stores a new link). Do this quietly; a one-line mention is enough.
 
 Go into the mathematics only when asked ("show me the maths"). Then derive it step by step in the reply, building on the card.
 
 ## Tone
 
-Plain, precise, calm. One idea per reply. Never quiz unasked beyond the single optional recall line.
+Plain, precise, calm. Never quiz unasked beyond the card's own check questions and the single optional recall line.

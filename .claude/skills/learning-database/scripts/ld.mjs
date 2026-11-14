@@ -36,12 +36,19 @@ function parseCard(src, file) {
   if (!m) throw new Error(`${file}: must start with a --- front matter block`);
   const meta = {};
   for (const line of m[1].split('\n')) { const k = line.match(/^([a-z_]+):\s*(.*)$/); if (k) meta[k[1]] = k[2].trim(); }
-  const [text, widget = ''] = m[2].split(/\n?<!-- widget -->\n?/);
+  // Text and visuals alternate: <!-- widget --> ... <!-- /widget -->. A last widget may omit the closing tag.
+  const chunks = m[2].split('<!-- widget -->'), parts = [];
+  if (chunks[0].trim()) parts.push({ md: chunks[0].trim() });
+  for (const ch of chunks.slice(1)) {
+    const [w, after = ''] = ch.split('<!-- /widget -->');
+    parts.push({ w: w.trim() });
+    if (after.trim()) parts.push({ md: after.trim() });
+  }
   const list = (v) => (v || '').split(',').map((x) => x.trim()).filter(Boolean);
-  const card = { ...meta, builds_on: list(meta.builds_on), leads_to: list(meta.leads_to), text: text.trim(), widget: widget.trim() };
+  const card = { ...meta, builds_on: list(meta.builds_on), leads_to: list(meta.leads_to), parts, text: parts.filter((p) => p.md).map((p) => p.md).join(String.fromCharCode(10, 10)), widgets: parts.filter((p) => p.w).length };
   for (const k of ['id', 'title', 'field', 'recall']) if (!card[k]) throw new Error(`${file}: front matter needs "${k}"`);
   if (!/^[a-z0-9][a-z0-9-]*$/.test(card.id)) throw new Error(`${file}: id must be lowercase letters, digits and hyphens`);
-  if (!card.widget) throw new Error(`${file}: no "<!-- widget -->" section`);
+  if (!card.widgets) throw new Error(`${file}: no "<!-- widget -->" section`);
   return card;
 }
 function cards() {
@@ -88,10 +95,9 @@ function notebook() {
   const body = newest.map((c, i) => `<details class="card" id="${c.id}"${i === 0 ? ' open' : ''}>
 <summary><span class="f">${esc(c.field)}</span><span class="ti">${esc(c.title)}</span><span class="d">${c.date}</span></summary>
 <div class="cb">
-<div class="prose">${md(c.text)}</div>
-<div class="widget">
-${c.widget}
-</div>
+${c.parts.map((p) => (p.md ? `<div class="prose">${md(p.md)}</div>` : `<div class="widget">
+${p.w}
+</div>`)).join(String.fromCharCode(10))}
 <details class="recall"><summary>Recall: ${esc(c.recall)}</summary><p>${esc(c.answer || '')}</p></details>
 ${c.sources ? `<p class="src">Sources: ${esc(c.sources)}</p>` : ''}
 </div>
