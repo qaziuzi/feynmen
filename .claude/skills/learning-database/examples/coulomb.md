@@ -57,7 +57,7 @@ sources: Feynman Lectures Vol. II §1-1, §4-2 (§4-2 checked online); Purcell &
 <div class="c1-stat"><span>Push or pull</span><b id="c1-kind"></b></div>
 <div class="c1-stat"><span>Compared with the start</span><b id="c1-rel"></b></div>
 </div>
-<p class="c1-note">Positions are to scale. Arrow length follows the logarithm of the force, because the force changes by a factor of 100 across this range of distance. On the plot both axes are logarithmic.</p>
+<p class="c1-note">Positions are to scale. Arrow length follows the logarithm of the force, because the force changes by a factor of 100 across this range of distance. On the plot both axes are logarithmic. Tap a charge or the slope label to ask about it.</p>
 <div class="c1-acts">
 <button id="c1-reset">Reset</button>
 <button class="ld-ask" onclick="sendPrompt('Show me the maths behind Coulomb\'s law')">Show me the maths ↗</button>
@@ -83,7 +83,7 @@ function draw(){
     s+='<line x1="'+x2+'" y1="'+(cy+12)+'" x2="'+x2+'" y2="160" style="stroke:'+mut+';stroke-width:0.5;stroke-dasharray:2 3"/>';
     s+=arr(x1,60,Math.max(6,Math.min(334,x1+d*L)),ink,2.5)+arr(x2,160,Math.max(6,Math.min(334,x2-d*L)),ink,2.5);
   }
-  [[x1,q1],[x2,q2]].forEach(function(c){s+='<circle cx="'+c[0]+'" cy="'+cy+'" r="11" style="fill:'+col(c[1])+'"/><text class="th" x="'+c[0]+'" y="'+cy+'" text-anchor="middle" dominant-baseline="central" style="fill:#fff">'+(sg(c[1])||'0')+'</text>'});
+  [[x1,q1],[x2,q2]].forEach(function(c){s+='<circle cx="'+c[0]+'" cy="'+cy+'" r="11" data-ask="Explain what a point charge is and when a real object counts as one, briefly" style="cursor:pointer;fill:'+col(c[1])+'"/><text class="th" x="'+c[0]+'" y="'+cy+'" text-anchor="middle" dominant-baseline="central" style="fill:#fff">'+(sg(c[1])||'0')+'</text>'});
   s+='<text class="ts" x="'+Math.max(36,Math.min(304,x1))+'" y="30" text-anchor="middle">q₁ = '+sg(q1)+Math.abs(q1)+' nC</text>';
   s+='<text class="ts" x="'+Math.max(36,Math.min(304,x2))+'" y="200" text-anchor="middle">q₂ = '+sg(q2)+Math.abs(q2)+' nC</text>';
   $('c1-scene').innerHTML=s;
@@ -100,7 +100,7 @@ function draw(){
     p+='<line clip-path="url(#c1-clip)" x1="'+X(2)+'" y1="'+Y(f(2))+'" x2="'+X(20)+'" y2="'+Y(f(20))+'" style="stroke:var(--text-accent);stroke-width:2"/>';
     var px=X(r),py=Y(a);
     if(py>=m.t&&py<=m.t+ph){p+='<line x1="'+px+'" y1="'+py+'" x2="'+px+'" y2="'+(m.t+ph)+'" style="stroke:'+mut+';stroke-width:0.5;stroke-dasharray:3 3"/><circle cx="'+px+'" cy="'+py+'" r="5" style="fill:var(--text-accent);stroke:var(--surface-1);stroke-width:2"/>'}
-    p+='<text class="ts" x="'+(m.l+pw-6)+'" y="'+(m.t+12)+'" text-anchor="end">slope −2</text>';
+    p+='<text class="ts" x="'+(m.l+pw-6)+'" y="'+(m.t+12)+'" text-anchor="end" data-ask="Explain why force against distance is a straight line of slope -2 on log-log axes, briefly" style="cursor:pointer;fill:var(--text-accent)">slope −2</text>';
   } else p+='<text class="t" x="'+(m.l+pw/2)+'" y="'+(m.t+ph/2)+'" text-anchor="middle" dominant-baseline="central">No force: a charge is zero</text>';
   $('c1-plot').innerHTML=p;
   $('c1-q1o').textContent=sg(q1)+Math.abs(q1)+' nC';$('c1-q2o').textContent=sg(q2)+Math.abs(q2)+' nC';$('c1-ro').textContent=r.toFixed(1)+' cm';
@@ -109,6 +109,7 @@ function draw(){
   var rel=a/F0;$('c1-rel').textContent=a===0?'—':rel>=1?'×'+(rel<10?rel.toFixed(2).replace(/\.?0+$/,''):Math.round(rel)):'1/'+(1/rel<10?(1/rel).toFixed(2).replace(/\.?0+$/,''):Math.round(1/rel));
 }
 ['c1-q1','c1-q2','c1-r'].forEach(function(i){$(i).addEventListener('input',draw)});
+['c1-scene','c1-plot'].forEach(function(i){$(i).addEventListener('click',function(e){var t=e.target.closest('[data-ask]');if(t&&typeof sendPrompt==='function')sendPrompt(t.getAttribute('data-ask'))})});
 $('c1-reset').addEventListener('click',function(){$('c1-q1').value=4;$('c1-q2').value=4;$('c1-r').value=6;draw()});
 draw();
 })();
@@ -153,7 +154,7 @@ Gravity dominates the large-scale universe anyway because matter is so precisely
 <label for="c2-q0">Test charge <select id="c2-q0"><option value="1">+1 nC</option><option value="2">+2 nC</option><option value="-1">−1 nC</option></select></label>
 </div>
 <div class="c2-stats" id="c2-stats"></div>
-<p class="c2-note">Positions are to scale: grid squares are 2 cm. Force arrows share one linear scale, reset so the longest has a fixed length. The dashed path adds the individual forces tip to tail and ends at the tip of the net force. Charges cannot come closer than 1.2 cm.</p>
+<p class="c2-note">Positions are to scale: grid squares are 2 cm. Force arrows share one linear scale, reset so the longest has a fixed length. The dashed path adds the individual forces tip to tail and ends at the tip of the net force. Charges cannot come closer than 1.2 cm. Tap the "net" label to ask why it points that way.</p>
 <div class="c2-acts">
 <button class="ld-ask" onclick="sendPrompt('Show me the maths of superposition for these charges')">Show me the maths ↗</button>
 <button class="ld-ask" onclick="sendPrompt('Next: teach me the electric field')">Next: the electric field ↗</button>
@@ -180,7 +181,7 @@ function draw(){
   var nm=Math.hypot(nx,ny);big=Math.max(big,nm);var sc=big>0?110/big:0,tx=X(st.t.x),ty=Y(st.t.y),bal=nm<0.03*sum;
   if(fs.length>1){var px=tx,py=ty,path='M'+px+' '+py;fs.forEach(function(f){px+=f.x*sc;py-=f.y*sc;path+='L'+px+' '+py});s+='<path d="'+path+'" style="fill:none;stroke:var(--text-muted);stroke-width:1;stroke-dasharray:4 4"/>'}
   fs.forEach(function(f,i){var ex=tx+f.x*sc,ey=ty-f.y*sc,c=col(st.src[i].q),u=f.m*sc;s+=arrow(tx,ty,ex,ey,c,2);if(u>18){var ux=f.x*sc/u,uy=-f.y*sc/u;s+='<text class="ts" x="'+clampX(tx+ux*u*0.55-uy*14)+'" y="'+clampY(ty+uy*u*0.55+ux*14)+'" text-anchor="middle" dominant-baseline="central" style="fill:'+c+'">F'+SUB[i]+'</text>'}});
-  if(!bal){var ex=tx+nx*sc,ey=ty-ny*sc,u=nm*sc,ux=nx*sc/u,uy=-ny*sc/u;s+=arrow(tx,ty,ex,ey,'var(--text-primary)',3.5,12);s+='<text class="th" x="'+clampX(ex+ux*18+uy*14)+'" y="'+clampY(ey+uy*18-ux*14)+'" text-anchor="middle" dominant-baseline="central">net</text>'}
+  if(!bal){var ex=tx+nx*sc,ey=ty-ny*sc,u=nm*sc,ux=nx*sc/u,uy=-ny*sc/u;s+=arrow(tx,ty,ex,ey,'var(--text-primary)',3.5,12);s+='<text class="th" x="'+clampX(ex+ux*18+uy*14)+'" y="'+clampY(ey+uy*18-ux*14)+'" text-anchor="middle" dominant-baseline="central" data-ask="Explain why the net force on the test charge points the way it does in this arrangement, briefly" style="cursor:pointer;fill:var(--text-accent)">net</text>'}
   st.src.forEach(function(c,i){s+='<circle cx="'+X(c.x)+'" cy="'+Y(c.y)+'" r="13" style="fill:'+col(c.q)+'"/><text class="th" x="'+X(c.x)+'" y="'+Y(c.y)+'" text-anchor="middle" dominant-baseline="central" style="fill:#fff">'+sg(c.q)+'</text><text class="ts" x="'+clampX(X(c.x))+'" y="'+clampY(Y(c.y)+26)+'" text-anchor="middle">q'+SUB[i]+' = '+sg(c.q)+Math.abs(c.q)+' nC</text>'});
   var tc=bal?'var(--text-success)':'var(--text-accent)';
   s+='<circle cx="'+tx+'" cy="'+ty+'" r="8" style="fill:var(--surface-2);stroke:'+tc+';stroke-width:3"/>';
@@ -204,6 +205,7 @@ svg.addEventListener('pointermove',function(e){var p=pt(e);if(act){place(act,p.x
 function end(){act=null;svg.style.cursor='default'}svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end);
 $('c2-presets').addEventListener('click',function(e){var b=e.target.closest('button');if(b)preset(b.getAttribute('data-p'))});
 $('c2-q0').addEventListener('change',function(){st.q0=+this.value;draw()});
+svg.addEventListener('click',function(e){var t=e.target.closest('[data-ask]');if(t&&typeof sendPrompt==='function')sendPrompt(t.getAttribute('data-ask'))});
 preset('equal');
 })();
 </script>

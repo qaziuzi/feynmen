@@ -1,10 +1,14 @@
-<h2 class="sr-only">Priming map: drag the key terms into groups of two to four, link related groups, then compare with the expert map.</h2>
+<h2 class="sr-only">Priming map: tap a term to see what it means, drag terms into groups that feel related, then compare with the expert map.</h2>
 <style>
+.pm-info{background:var(--surface-1);border-radius:12px;padding:12px 16px;margin:10px 0 0;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;min-height:52px}
+.pm-info p{margin:0;font-size:15px;line-height:1.5;flex:1 1 280px;min-width:0}
+.pm-info p b{font-weight:500}
+.pm-info .hint{color:var(--text-secondary)}
 .pm-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 0}
 .pm-bar .sp{flex:1}
 .pm-bar button[aria-pressed="true"]{background:var(--bg-accent);color:var(--text-accent);border-color:var(--text-accent)}
 .pm-msg{font-size:14px;color:var(--text-secondary);margin:10px 0 0;line-height:1.5}
-.pm-names{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin:12px 0 0}
+.pm-names{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin:12px 0 0}
 .pm-names label{font-size:13px;color:var(--text-secondary);display:flex;flex-direction:column;gap:4px}
 .pm-names input{width:100%;min-width:0}
 .pm-exp{margin:18px 0 0;display:flex;flex-direction:column;gap:10px}
@@ -12,90 +16,115 @@
 .pm-score{background:var(--bg-accent);color:var(--text-accent);border-radius:var(--radius);padding:10px 14px;font-size:14px;line-height:1.5}
 .pm-eg{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
 .pm-eg div{background:var(--surface-1);border-radius:var(--radius);padding:10px 12px;font-size:14px;line-height:1.5}
-.pm-eg b{display:block;font-weight:500;margin-bottom:2px}
+.pm-eg b{display:block;font-weight:500;margin-bottom:4px}
+.pm-eg button{font-size:13px;padding:2px 8px;margin:0 4px 4px 0}
 .pm-el{font-size:14px;color:var(--text-secondary);margin:0;padding-left:1.1em;line-height:1.6}
 </style>
-<svg id="pm-svg" width="100%" viewBox="0 0 680 520" role="img" style="touch-action:none"><title>Your priming map</title><desc>Key terms in a tray above six group boxes; drag terms into boxes and link boxes.</desc></svg>
+<svg id="pm-svg" width="100%" viewBox="0 0 680 520" role="img" style="touch-action:none"><title>Your priming map</title><desc>Key terms above a few group boxes and a box for terms you are not sure about.</desc></svg>
+<div class="pm-info" id="pm-info"></div>
+<p class="pm-msg" id="pm-msg"></p>
 <div class="pm-bar">
-<button id="pm-link" aria-pressed="false">Link groups</button>
-<button id="pm-reset">Start over</button>
-<span class="sp"></span>
 <button id="pm-show">Show expert map</button>
 <button class="ld-ask" id="pm-send">Compare my map with Claude ↗</button>
+<span class="sp"></span>
+<button id="pm-link" aria-pressed="false">Link groups (optional)</button>
+<button id="pm-name" aria-pressed="false">Name groups (optional)</button>
+<button id="pm-reset">Start over</button>
 </div>
-<p class="pm-msg" id="pm-msg"></p>
-<div class="pm-names" id="pm-names"></div>
+<div class="pm-names" id="pm-names" hidden></div>
 <div class="pm-exp" id="pm-exp" hidden></div>
 <script>
 (function(){
 var D=/*DATA*/;
-var $=function(i){return document.getElementById(i)},svg=$('pm-svg'),W=680,NG=6,COLS=3,GAP=12,BW=(W-20-GAP*(COLS-1))/COLS,BH=176,CH=26;
-var st,act=null,down=null,sel=-1,linkA=-1,linking=false,trayH=0,boxes=[];
+var $=function(i){return document.getElementById(i)},svg=$('pm-svg'),W=680,N=D.terms.length;
+var NG=Math.min(6,Math.max(3,Math.ceil(N/2.6))),COLS=NG===4?2:3,GAP=12,BW=(W-20-GAP*(COLS-1))/COLS,BH=170,CH=26,UNS=-2;
+var st,act=null,down=null,sel=null,linkA=-1,linking=false,boxes=[],unsBox=null;
+var ask=typeof sendPrompt==='function';
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
-function fresh(){st={terms:shuffle(D.terms).map(function(t){return {t:t,g:-1,x:0,y:0,w:Math.min(250,t.length*7.2+22)}}),names:[],links:[]};for(var i=0;i<NG;i++)st.names.push('');}
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+function fresh(){st={terms:shuffle(D.terms).map(function(t){return {t:t,g:-1,x:0,y:0,w:Math.min(250,t.length*7.2+22)}}),names:[],links:[]};for(var i=0;i<NG;i++)st.names.push('');sel=null}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
 function gname(i){return st.names[i]||('Group '+(i+1))}
+function dragging(c){return c===act&&down&&down.moved}
+function flow(list,x0,y0,maxX){var x=x0,y=y0;list.forEach(function(c){if(x+c.w>maxX){x=x0;y+=CH+8}c.x=x;c.y=y;x+=c.w+8});return y+CH}
 function layout(){
-  var x=10,y=12;st.terms.forEach(function(c){if(c.g>=0||(c===act&&down&&down.moved))return;if(x+c.w>W-10){x=10;y+=CH+8}c.x=x;c.y=y;x+=c.w+8});
-  var anyTray=st.terms.some(function(c){return c.g<0});trayH=anyTray?y+CH+16:46;
-  boxes=[];for(var i=0;i<NG;i++){boxes.push({x:10+(i%COLS)*(BW+GAP),y:trayH+10+Math.floor(i/COLS)*(BH+GAP),w:BW,h:BH})}
-  for(var g=0;g<NG;g++){var k=0;st.terms.forEach(function(c){if(c.g!==g||(c===act&&down&&down.moved))return;var b=boxes[g];c.x=b.x+10;c.y=b.y+34+k*(CH+5);c.w=b.w-20;c.hidden=k>=4;k++})}
+  st.terms.forEach(function(c){if(c.g<0)c.w=Math.min(250,c.t.length*7.2+22)});
+  var tray=st.terms.filter(function(c){return c.g===-1&&!dragging(c)});
+  var trayH=tray.length?flow(tray,10,12,W-10)+16:46;
+  boxes=[];for(var i=0;i<NG;i++)boxes.push({x:10+(i%COLS)*(BW+GAP),y:trayH+10+Math.floor(i/COLS)*(BH+GAP),w:BW,h:BH});
+  for(var g=0;g<NG;g++){var k=0;st.terms.forEach(function(c){if(c.g!==g||dragging(c))return;var b=boxes[g];c.x=b.x+10;c.y=b.y+34+k*(CH+5);c.w=b.w-20;c.hidden=k>=4;k++})}
+  var by=boxes[NG-1].y+BH+GAP,uns=st.terms.filter(function(c){return c.g===UNS&&!dragging(c)});
+  var bottom=uns.length?flow(uns,20,by+32,W-20):by+32+CH;
+  unsBox={x:10,y:by,w:W-20,h:bottom-by+12};
   st.terms.forEach(function(c){if(c.g<0)c.hidden=false});
+  return unsBox.y+unsBox.h+8;
 }
 function chip(c,float){
-  var s=sel>=0&&st.terms[sel]===c,stroke=s?'var(--text-accent)':'var(--border-strong)';
+  var s=sel===c,stroke=s?'var(--text-accent)':'var(--border-strong)';
   var label=c.t.length*7.2+22>c.w?c.t.slice(0,Math.floor((c.w-22)/7.2)-1)+'…':c.t;
-  return '<g'+(float?' opacity="0.85"':'')+'><rect x="'+c.x+'" y="'+c.y+'" width="'+c.w+'" height="'+CH+'" rx="13" style="fill:var(--surface-2);stroke:'+stroke+';stroke-width:'+(s?2:0.5)+'"/><text class="ts" x="'+(c.x+11)+'" y="'+(c.y+CH/2)+'" dominant-baseline="central" style="fill:var(--text-primary);font-size:13px">'+esc(label)+'</text></g>';
+  return '<g'+(float?' opacity="0.85"':'')+' style="cursor:pointer"><rect x="'+c.x+'" y="'+c.y+'" width="'+c.w+'" height="'+CH+'" rx="13" style="fill:'+(s?'var(--bg-accent)':'var(--surface-2)')+';stroke:'+stroke+';stroke-width:'+(s?1.5:0.5)+'"/><text class="ts" x="'+(c.x+11)+'" y="'+(c.y+CH/2)+'" dominant-baseline="central" style="fill:'+(s?'var(--text-accent)':'var(--text-primary)')+';font-size:13px">'+esc(label)+'</text></g>';
+}
+function info(){
+  var el=$('pm-info');
+  if(!sel){el.innerHTML='<p class="hint">Tap any term to see what it means. Then drag it, or tap a box, to place it.</p>';return}
+  var d=(D.defs&&D.defs[sel.t])||'';
+  el.innerHTML='<p><b>'+esc(sel.t)+'.</b> '+esc(d)+'</p>'+(ask?'<button id="pm-learn">Teach me this ↗</button>':'');
+  if(ask)$('pm-learn').addEventListener('click',function(){sendPrompt('Teach me "'+sel.t+'" in '+D.topic+'. Keep it short: what it is and why it matters, from first principles.')});
 }
 function draw(){
-  layout();var H=boxes[NG-1].y+BH+10,s='';svg.setAttribute('viewBox','0 0 '+W+' '+H);
-  if(!st.terms.some(function(c){return c.g<0}))s+='<text class="ts" x="'+W/2+'" y="24" text-anchor="middle">All terms placed. Link groups, then compare.</text>';
+  var H=layout(),s='';svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  if(!st.terms.some(function(c){return c.g===-1}))s+='<text class="ts" x="'+W/2+'" y="24" text-anchor="middle">Every term is placed.</text>';
   boxes.forEach(function(b,i){
     var n=st.terms.filter(function(c){return c.g===i}).length,hot=linkA===i;
     s+='<rect x="'+b.x+'" y="'+b.y+'" width="'+b.w+'" height="'+b.h+'" rx="10" style="fill:var(--surface-1);stroke:'+(hot?'var(--text-accent)':'var(--border)')+';stroke-width:'+(hot?2:0.5)+'"/>';
     s+='<text class="th" x="'+(b.x+12)+'" y="'+(b.y+18)+'" dominant-baseline="central">'+esc(gname(i)).slice(0,22)+'</text>';
-    var warn=n===1?'add one more':n>4?'split it':'',col=warn?'var(--text-danger)':'var(--text-muted)';
-    if(n)s+='<text class="ts" x="'+(b.x+b.w-12)+'" y="'+(b.y+18)+'" text-anchor="end" dominant-baseline="central" style="fill:'+col+'">'+n+(warn?' · '+warn:'')+'</text>';
     if(n>4)s+='<text class="ts" x="'+(b.x+12)+'" y="'+(b.y+b.h-12)+'" dominant-baseline="central">+'+(n-4)+' more</text>';
-    if(!n)s+='<text class="ts" x="'+(b.x+b.w/2)+'" y="'+(b.y+b.h/2+8)+'" text-anchor="middle" dominant-baseline="central" style="fill:var(--text-muted)">drop terms here</text>';
+    if(!n)s+='<text class="ts" x="'+(b.x+b.w/2)+'" y="'+(b.y+b.h/2+8)+'" text-anchor="middle" dominant-baseline="central" style="fill:var(--text-muted)">drop related terms here</text>';
   });
+  s+='<rect x="'+unsBox.x+'" y="'+unsBox.y+'" width="'+unsBox.w+'" height="'+unsBox.h+'" rx="10" style="fill:none;stroke:var(--border-strong);stroke-width:0.5;stroke-dasharray:5 4"/>';
+  s+='<text class="th" x="'+(unsBox.x+12)+'" y="'+(unsBox.y+18)+'" dominant-baseline="central">Not sure yet</text>';
+  if(!st.terms.some(function(c){return c.g===UNS}))s+='<text class="ts" x="'+(unsBox.x+120)+'" y="'+(unsBox.y+18)+'" dominant-baseline="central" style="fill:var(--text-muted)">put any term you have no feel for here; that is useful to know</text>';
   st.links.forEach(function(l){var a=boxes[l[0]],b=boxes[l[1]],ax=a.x+a.w/2,ay=a.y+a.h/2,bx=b.x+b.w/2,by=b.y+b.h/2,mx=(ax+bx)/2,my=(ay+by)/2-(ay===by?40:0);
     s+='<path d="M'+ax+' '+ay+' Q'+mx+' '+my+' '+bx+' '+by+'" style="fill:none;stroke:var(--text-accent);stroke-width:2.5;stroke-opacity:0.7;stroke-dasharray:6 4"/><circle cx="'+ax+'" cy="'+ay+'" r="4" style="fill:var(--text-accent)"/><circle cx="'+bx+'" cy="'+by+'" r="4" style="fill:var(--text-accent)"/>'});
   st.terms.forEach(function(c){if(!c.hidden&&c!==act)s+=chip(c)});
   if(act)s+=chip(act,true);
   svg.innerHTML=s;
-  var placed=st.terms.filter(function(c){return c.g>=0}).length;
-  $('pm-msg').textContent=linking?'Tap two groups to link or unlink them. Link groups whose ideas depend on each other.':placed<st.terms.length?'Drag each term into a group, or tap a term and then a group. Aim for 2 to 4 terms per group, grouped the way it makes sense to you, not the textbook order. '+placed+' of '+st.terms.length+' placed.':'Every term is placed. Name your groups below, link the groups that depend on each other, then compare.';
+  var left=st.terms.filter(function(c){return c.g===-1}).length;
+  $('pm-msg').textContent=linking?'Tap two groups to link or unlink them. Only link groups when you can say in one sentence how one affects the other.':left?'Group terms that feel related, even as a guess; a wrong guess still helps you learn. '+left+' left to place.':'Done. Press "Show expert map", or "Compare my map with Claude" for a short review.';
+  info();
 }
-function names(){var h='';for(var i=0;i<NG;i++)h+='<label>Name for group '+(i+1)+'<input id="pm-n'+i+'" value="'+esc(st.names[i])+'" placeholder="Group '+(i+1)+'"></label>';$('pm-names').innerHTML=h;
-  for(var i2=0;i2<NG;i2++)(function(k){$('pm-n'+k).addEventListener('input',function(){st.names[k]=this.value;draw()})})(i2)}
 function pt(e){var p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse())}
-function boxAt(p){for(var i=0;i<NG;i++){var b=boxes[i];if(p.x>=b.x&&p.x<=b.x+b.w&&p.y>=b.y&&p.y<=b.y+b.h)return i}return -1}
+function inside(p,b){return p.x>=b.x&&p.x<=b.x+b.w&&p.y>=b.y&&p.y<=b.y+b.h}
+function regionAt(p){for(var i=0;i<NG;i++)if(inside(p,boxes[i]))return i;if(inside(p,unsBox))return UNS;return -1}
 function chipAt(p){for(var i=st.terms.length-1;i>=0;i--){var c=st.terms[i];if(!c.hidden&&p.x>=c.x&&p.x<=c.x+c.w&&p.y>=c.y&&p.y<=c.y+CH)return c}return null}
 svg.addEventListener('pointerdown',function(e){var p=pt(e);
-  if(linking){var g=boxAt(p);if(g<0)return;if(linkA<0){linkA=g}else if(linkA===g){linkA=-1}else{var k=st.links.findIndex(function(l){return (l[0]===linkA&&l[1]===g)||(l[0]===g&&l[1]===linkA)});if(k>=0)st.links.splice(k,1);else st.links.push([linkA,g]);linkA=-1}draw();return}
+  if(linking){var g=regionAt(p);if(g<0)return;if(linkA<0){linkA=g}else if(linkA===g){linkA=-1}else{var k=st.links.findIndex(function(l){return (l[0]===linkA&&l[1]===g)||(l[0]===g&&l[1]===linkA)});if(k>=0)st.links.splice(k,1);else st.links.push([linkA,g]);linkA=-1}draw();return}
   var c=chipAt(p);
   if(c){act=c;down={x:p.x,y:p.y,ox:p.x-c.x,oy:p.y-c.y,moved:false};try{svg.setPointerCapture(e.pointerId)}catch(err){}e.preventDefault();return}
-  if(sel>=0){var g2=boxAt(p);st.terms[sel].g=g2;sel=-1;draw()}
+  if(sel){var r=regionAt(p);if(r!==-1||p.y<boxes[0].y){sel.g=r;sel=null;draw()}}
 });
 svg.addEventListener('pointermove',function(e){if(!act)return;var p=pt(e);if(Math.hypot(p.x-down.x,p.y-down.y)>5)down.moved=true;if(down.moved){act.x=p.x-down.ox;act.y=p.y-down.oy;draw()}});
-svg.addEventListener('pointerup',function(e){if(!act)return;var p=pt(e),c=act;act=null;
-  if(down.moved){c.g=boxAt(p);sel=-1}else{var i=st.terms.indexOf(c);sel=sel===i?-1:i}
+svg.addEventListener('pointerup',function(e){if(!act)return;var p=pt(e),c=act,moved=down.moved;act=null;down=null;
+  if(moved){c.g=regionAt(p);sel=c}else{sel=sel===c?null:c}
   draw()});
-svg.addEventListener('pointercancel',function(){act=null;draw()});
-$('pm-link').addEventListener('click',function(){linking=!linking;linkA=-1;sel=-1;this.setAttribute('aria-pressed',linking?'true':'false');draw()});
-$('pm-reset').addEventListener('click',function(){fresh();linking=false;linkA=-1;sel=-1;$('pm-link').setAttribute('aria-pressed','false');$('pm-exp').hidden=true;$('pm-show').textContent='Show expert map';names();draw()});
-function summary(){var gs=[];for(var i=0;i<NG;i++){var ts=st.terms.filter(function(c){return c.g===i}).map(function(c){return c.t});if(ts.length)gs.push(gname(i)+': '+ts.join(', '))}
-  var un=st.terms.filter(function(c){return c.g<0}).map(function(c){return c.t});
-  return 'My priming map for "'+D.topic+'". Groups: '+(gs.length?gs.join('; '):'none')+'. Links: '+(st.links.length?st.links.map(function(l){return gname(l[0])+' ↔ '+gname(l[1])}).join('; '):'none')+'.'+(un.length?' Not placed: '+un.join(', ')+'.':'')+' Compare it with the expert structure: where does my model differ, and why?'}
-$('pm-send').addEventListener('click',function(){if(typeof sendPrompt==='function')sendPrompt(summary())});
+svg.addEventListener('pointercancel',function(){act=null;down=null;draw()});
+$('pm-link').addEventListener('click',function(){linking=!linking;linkA=-1;this.setAttribute('aria-pressed',linking?'true':'false');draw()});
+$('pm-name').addEventListener('click',function(){var box=$('pm-names'),on=box.hidden;box.hidden=!on;this.setAttribute('aria-pressed',on?'true':'false')});
+function names(){var h='';for(var i=0;i<NG;i++)h+='<label>Group '+(i+1)+'<input id="pm-n'+i+'" value="'+esc(st.names[i])+'" placeholder="What do these share?"></label>';$('pm-names').innerHTML=h;
+  for(var i2=0;i2<NG;i2++)(function(k){$('pm-n'+k).addEventListener('input',function(){st.names[k]=this.value;draw()})})(i2)}
+$('pm-reset').addEventListener('click',function(){fresh();linking=false;linkA=-1;$('pm-link').setAttribute('aria-pressed','false');$('pm-exp').hidden=true;$('pm-show').textContent='Show expert map';names();draw()});
+function list(g){return st.terms.filter(function(c){return c.g===g}).map(function(c){return c.t})}
+function summary(){var gs=[];for(var i=0;i<NG;i++){var ts=list(i);if(ts.length)gs.push(gname(i)+': '+ts.join(', '))}
+  var un=list(UNS),left=list(-1);
+  return 'My priming map for "'+D.topic+'". Groups: '+(gs.length?gs.join('; '):'none')+'.'+(st.links.length?' Links: '+st.links.map(function(l){return gname(l[0])+' ↔ '+gname(l[1])}).join('; ')+'.':'')+(un.length?' Not sure yet: '+un.join(', ')+'.':'')+(left.length?' Not placed: '+left.join(', ')+'.':'')+' Give me a short review: what I got right, the biggest difference from the expert map and why, and where I should start.'}
+$('pm-send').addEventListener('click',function(){if(ask)sendPrompt(summary())});
 $('pm-show').addEventListener('click',function(){var box=$('pm-exp');if(!box.hidden){box.hidden=true;this.textContent='Show expert map';return}
   var eg={};D.expert.groups.forEach(function(g,i){g.terms.forEach(function(t){eg[t]=i})});
-  var pairs=0,agree=0;for(var g=0;g<NG;g++){var ts=st.terms.filter(function(c){return c.g===g});for(var a=0;a<ts.length;a++)for(var b=a+1;b<ts.length;b++){pairs++;if(eg[ts[a].t]===eg[ts[b].t])agree++}}
-  var h='<h3>Expert map</h3><div class="pm-score">'+(pairs?agree+' of the '+pairs+' pairs you grouped together are also grouped together here.':'Group some terms first to compare pairs.')+' A different grouping is not a mistake if you can say why it holds; the useful part is noticing where and why the two maps differ.</div>';
-  h+='<div class="pm-eg">'+D.expert.groups.map(function(g){return '<div><b>'+esc(g.name)+'</b>'+g.terms.map(esc).join(', ')+'</div>'}).join('')+'</div>';
+  var pairs=0,agree=0;for(var g=0;g<NG;g++){var ts=list(g);for(var a=0;a<ts.length;a++)for(var b=a+1;b<ts.length;b++){pairs++;if(eg[ts[a]]===eg[ts[b]])agree++}}
+  var h='<h3>Expert map</h3><div class="pm-score">'+(pairs?agree+' of the '+pairs+' pairs you put together are together here too. ':'')+'Differences are the interesting part, not mistakes.'+(ask?' Tap any term to ask about it.':'')+'</div>';
+  h+='<div class="pm-eg">'+D.expert.groups.map(function(g){return '<div><b>'+esc(g.name)+'</b>'+g.terms.map(function(t){return ask?'<button data-t="'+esc(t)+'">'+esc(t)+'</button>':esc(t)+' '}).join('')+'</div>'}).join('')+'</div>';
   h+='<ul class="pm-el">'+D.expert.links.map(function(l){return '<li>'+esc(D.expert.groups[l[0]].name)+' ↔ '+esc(D.expert.groups[l[1]].name)+': '+esc(l[2])+'</li>'}).join('')+'</ul>';
   box.innerHTML=h;box.hidden=false;this.textContent='Hide expert map'});
+$('pm-exp').addEventListener('click',function(e){var b=e.target.closest('button[data-t]');if(b&&ask)sendPrompt('Teach me "'+b.getAttribute('data-t')+'" in '+D.topic+'. Keep it short: what it is and why it matters, from first principles.')});
 fresh();names();draw();
 })();
 </script>

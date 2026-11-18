@@ -44,6 +44,7 @@ Typically 900 to 1,300 words of text and three visuals.
 - Make them rich: two linked panels (for example a scene and a live plot), several controls, presets, dragging, stat tiles. A single slider panel is not enough for a main visual.
 - They compute the real physics in real units. Anything not to scale says so in one short note line.
 - Each ends with buttons that call `sendPrompt`, class `ld-ask`: "Show me the maths ↗" and "Next: <concept> ↗", plus a local Reset.
+- **Clickable parts.** Named parts of a visual that a learner might wonder about (a component, a labelled quantity, a region) are clickable and call `sendPrompt('Explain <part> in <card topic>, briefly')` when `sendPrompt` exists. Give them `cursor:pointer` and say so in the note line ("tap a labelled part to ask about it"). Two to five clickable parts per visual, not every label.
 - **So they also work in the notebook page:** prefix every element id with a short card prefix (`c1-`, `c2-`…), wrap the script in a function, and use only these variables: `--text-primary --text-secondary --text-muted --text-accent --text-success --text-danger --bg-accent --bg-success --bg-danger --border --border-strong --surface-1 --surface-2 --radius --font-sans`; only the SVG text classes `t ts th`; fixed hex colours only for physical meaning (positive charge `#D85A30`, negative `#378ADD`). Set colours with `style="fill:…;stroke:…"`. Read element sizes only inside event handlers (for example `getScreenCTM` when dragging).
 
 ## Card file

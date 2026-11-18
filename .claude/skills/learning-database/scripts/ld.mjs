@@ -121,7 +121,9 @@ function mapSvg(list) {
 const mapsDir = opts.maps ? path.resolve(opts.maps) : path.join(home, 'maps');
 function checkPrime(d, file) {
   if (!d.topic || !Array.isArray(d.terms) || !d.expert || !Array.isArray(d.expert.groups)) throw new Error(`${file}: needs topic, terms[], expert.groups[]`);
-  if (d.terms.length < 6 || d.terms.length > 24) throw new Error(`${file}: use 6 to 24 terms`);
+  if (d.terms.length < 6 || d.terms.length > 16) throw new Error(`${file}: use 6 to 16 terms (8 to 10 for a field the learner is new to)`);
+  if (!d.defs || typeof d.defs !== 'object') throw new Error(`${file}: needs defs: a one-line plain meaning for every term`);
+  d.terms.forEach((t) => { const m = d.defs[t]; if (!m) throw new Error(`${file}: no meaning in defs for "${t}"`); if (m.length > 140) throw new Error(`${file}: meaning for "${t}" is over 140 characters; keep it to one plain line`); });
   if (d.expert.groups.length > 6) throw new Error(`${file}: at most 6 expert groups (the board has 6 boxes)`);
   const seen = new Set();
   d.expert.groups.forEach((g) => {
@@ -136,10 +138,10 @@ function mapsHtml() {
   if (!fs.existsSync(mapsDir)) return '';
   const maps = fs.readdirSync(mapsDir).filter((f) => f.endsWith('.json')).map((f) => JSON.parse(fs.readFileSync(path.join(mapsDir, f), 'utf8'))).sort((a, b) => (a.date < b.date ? 1 : -1));
   if (!maps.length) return '';
-  const col = (title, groups, links) => `<div class="mcol"><h3>${title}</h3><div class="mg">${groups.map((g) => `<div><b>${esc(g.name)}</b>${g.terms.map(esc).join(', ')}</div>`).join('')}</div>${links.length ? `<ul>${links.map((l) => `<li>${l.map(esc).join(' ↔ ')}</li>`).join('')}</ul>` : ''}</div>`;
+  const col = (title, groups, links, unsure) => `<div class="mcol"><h3>${title}</h3><div class="mg">${groups.map((g) => `<div><b>${esc(g.name)}</b>${g.terms.map(esc).join(', ')}</div>`).join('')}${unsure && unsure.length ? `<div><b>Not sure yet</b>${unsure.map(esc).join(', ')}</div>` : ''}</div>${links.length ? `<ul>${links.map((l) => `<li>${l.map(esc).join(' ↔ ')}</li>`).join('')}</ul>` : ''}</div>`;
   return `<section style="display:flex;flex-direction:column;gap:10px"><h2>Your priming maps</h2><p class="sub" style="margin:0">How you structured each topic before learning it, beside the expert structure.</p>${maps.map((m) => {
     const exLinks = m.expert.links.map((l) => [m.expert.groups[l[0]].name, m.expert.groups[l[1]].name + ': ' + l[2]]);
-    return `<details class="card"><summary><span class="f">${esc(m.field || 'map')}</span><span class="ti">${esc(m.topic)}</span><span class="d">${m.date}</span></summary><div class="cb"><div class="mcols">${col('Your map', m.learner.groups, m.learner.links || [])}${col('Expert map', m.expert.groups, exLinks)}</div>${m.notes ? `<p class="src">${esc(m.notes)}</p>` : ''}</div></details>`;
+    return `<details class="card"><summary><span class="f">${esc(m.field || 'map')}</span><span class="ti">${esc(m.topic)}</span><span class="d">${m.date}</span></summary><div class="cb"><div class="mcols">${col('Your map', m.learner.groups, m.learner.links || [], m.learner.unsure)}${col('Expert map', m.expert.groups, exLinks)}</div>${m.notes ? `<p class="src">${esc(m.notes)}</p>` : ''}</div></details>`;
   }).join('')}</section>`;
 }
 function notebook() {
@@ -181,7 +183,7 @@ function main() {
       const file = path.resolve(args[0] || '');
       const d = JSON.parse(fs.readFileSync(file, 'utf8'));
       checkPrime(d, file);
-      const data = JSON.stringify({ topic: d.topic, terms: d.terms, expert: d.expert }).replace(/</g, '\\u003c');
+      const data = JSON.stringify({ topic: d.topic, terms: d.terms, defs: d.defs, expert: d.expert }).replace(/</g, '\\u003c');
       const widget = fs.readFileSync(path.join(skill, 'shared/prime.html'), 'utf8').replace('/*DATA*/', () => data);
       if (opts.out) { fs.writeFileSync(path.resolve(opts.out), widget); console.log('Wrote ' + path.resolve(opts.out)); } else process.stdout.write(widget);
       break;
@@ -190,7 +192,7 @@ function main() {
       const file = path.resolve(args[0] || '');
       const d = JSON.parse(fs.readFileSync(file, 'utf8'));
       checkPrime(d, file);
-      if (!d.learner || !Array.isArray(d.learner.groups)) throw new Error(`${file}: needs learner.groups[] ({name, terms}) and optional learner.links[] ([name, name])`);
+      if (!d.learner || !Array.isArray(d.learner.groups)) throw new Error(`${file}: needs learner.groups[] ({name, terms}), optional learner.links[] ([name, name]) and learner.unsure[] (terms)`);
       d.date = d.date || today();
       const slug = d.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       fs.mkdirSync(mapsDir, { recursive: true });

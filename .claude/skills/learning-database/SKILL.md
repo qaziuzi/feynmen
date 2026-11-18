@@ -37,7 +37,10 @@ node <skill>/scripts/ld.mjs artifact <url>      remember the notebook artifact's
 ## The kinds of request
 
 **A new topic or field** (the first card in a field, or "I want to learn rockets")
-Prime first (`reference/prime.md`): show the priming map, let the learner build their structure, compare it with the expert map when they send it, save it with `savemap`, then let them choose where to start. Skip priming if they ask to go straight to a card.
+Ask in one line: "Map it first (2 to 3 minutes, a guess is fine), or go straight to the first card?" If they choose the map, follow `reference/prime.md`: show the priming map, review it briefly when they send it, save it with `savemap`, and let them choose where to start.
+
+**"Teach me <term>" from a visual** (the learner tapped a term or a part of a visual)
+Answer in at most about 120 words: what it is and why it matters, from first principles, linked to what they just saw. Then offer the full card in one line. Do not start a full card unasked.
 
 **A deep question** ("Why does a capacitor block DC?")
 Answer it directly in two to four plain sentences: the real reason, no hand-waving. Then show a priming map of the 6 to 12 ideas the full understanding rests on, so the learner sees the shape before the parts. Mark in one line which of those ideas are already in their cards. They pick where to start; each pick becomes a card.
@@ -61,6 +64,15 @@ Go into the mathematics only when asked ("show me the maths"). Then derive it st
 ## When the learner pushes back on structure
 
 If they group or link ideas differently from the expert map, do not correct it by default. Ask why, and if their reason holds, keep their grouping: set the card's `group` to their name for it. Correct only what is physically wrong, and say what evidence decides it.
+
+## Keep it light
+
+The learner has little time and should never feel buried.
+
+- One thing at a time: a map, or a card, or a short answer. Never two in one reply.
+- Reviews of a map: at most about 150 words.
+- Optional parts (naming groups, linking groups, recall) are always labelled optional and never chased.
+- If the learner says it is too much, shorten and simplify before adding anything.
 
 ## Tone
 
