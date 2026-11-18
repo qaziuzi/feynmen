@@ -13,10 +13,12 @@ A card teaches one concept in 10 to 15 minutes, deeply and precisely, in the cha
 
 ## Why it is shaped this way
 
-- **Connect to what they know.** Open by placing the idea among cards the learner already has. New knowledge sticks when it attaches to old.
+- **Connect to what they know.** Open by placing the idea among cards the learner already has and in their priming map for the field. New knowledge sticks when it attaches to old.
+- **No islands.** Also anchor it in something the learner knows from outside their cards: a device they use, their work, an everyday observation. Knowledge connected only to itself is hard to apply without a prompt.
 - **Predict, then see.** Each visual is preceded by a concrete prediction question. A guess made before the answer makes the answer memorable, right or wrong.
 - **Words and pictures together.** The text carries the reasoning; the visuals let the learner operate the mechanism. Never move the explanation into the visual.
 - **Test, then space.** End with three questions that test understanding, answered by clicking. One recall question comes back days later.
+- **Higher-order recall only.** Both the check questions and the recall question ask the learner to compare, apply or connect: two ideas side by side, a real situation, a prediction. Never ask for a definition or a single number on its own.
 
 ## Card text and visuals, in order
 
@@ -28,9 +30,9 @@ A card teaches one concept in 10 to 15 minutes, deeply and precisely, in the cha
 6. **Scale and consequences.** Real magnitudes, a surprising consequence, the answer to the prediction.
 7. A second aspect of the concept, a **prediction**, then **visual 2**: something the learner drags or builds.
 8. **Result.** The idea stated exactly in two or three sentences.
-9. **Where it stops being true.** Limits of validity.
+9. **Where it stops being true.** Limits of validity: the situations that break the idea.
 10. **Check yourself**, then **visual 3**: three multiple-choice questions with explanations on click.
-11. **Where it leads.** Links to other fields and to the next concepts.
+11. **Where it sits and where it leads.** Its group in the learner's map, the cards and fields it links to, and the next concepts.
 12. **Build spark.** One concrete thing to build or measure.
 13. **Sources.** One line.
 
@@ -51,10 +53,12 @@ Typically 900 to 1,300 words of text and three visuals.
 id: coulomb
 title: Coulomb's law
 field: electronics
+group: the group this card belongs to in the learner's map of the field (use their group names)
 builds_on: ids of the learner's cards it rests on (comma-separated, may be empty)
+links: ids of the learner's cards it connects to sideways, in any field (comma-separated, may be empty)
 leads_to: next concepts
-recall: one recall question for later
-answer: its answer
+recall: one recall question for later, comparing or applying (see above)
+answer: its answer, with the reasoning
 sources: one line
 ---
 (Markdown text exactly as shown in the reply)

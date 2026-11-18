@@ -1,0 +1,31 @@
+{
+  "topic": "Electronics foundations",
+  "field": "electronics",
+  "terms": [
+    "Electric charge", "Coulomb's law", "Superposition",
+    "Electric field", "Gauss's law", "Voltage",
+    "Conductor", "Current", "Resistance",
+    "Capacitance", "Inductance",
+    "Magnetic field", "Induction", "Maxwell's equations",
+    "Energy flow", "Circuit laws"
+  ],
+  "expert": {
+    "groups": [
+      { "name": "Charges and forces", "terms": ["Electric charge", "Coulomb's law", "Superposition"] },
+      { "name": "Fields from charges at rest", "terms": ["Electric field", "Gauss's law", "Voltage"] },
+      { "name": "Charge moving in matter", "terms": ["Conductor", "Current", "Resistance"] },
+      { "name": "Energy stored in fields", "terms": ["Capacitance", "Inductance"] },
+      { "name": "Changing fields", "terms": ["Magnetic field", "Induction", "Maxwell's equations"] },
+      { "name": "Circuits", "terms": ["Energy flow", "Circuit laws"] }
+    ],
+    "links": [
+      [0, 1, "the field is the force per unit charge, built from Coulomb's law and superposition"],
+      [1, 2, "an electric field inside a conductor drives the current"],
+      [1, 3, "a capacitor stores energy in its electric field"],
+      [2, 4, "currents create magnetic fields"],
+      [4, 3, "an inductor stores energy in its magnetic field"],
+      [4, 5, "circuit laws are the slowly-changing limit of Maxwell's equations"],
+      [2, 5, "resistance and current are what circuit laws keep track of"]
+    ]
+  }
+}

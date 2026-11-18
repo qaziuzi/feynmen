@@ -5,7 +5,8 @@ A skill for Claude that teaches physics, engineering, mathematics and AI from fi
 - **Short cards, shown in the chat.** One idea, three to five minutes: a few plain paragraphs on how it really works, and one interactive visual you can operate.
 - **First principles, no fluff.** Explained from the governing laws, no misleading analogies, sources from standard university texts. Mathematics only when you ask for it.
 - **Your own database.** No fixed curriculum. Every card you learn is saved, connected to the cards it builds on, and collected in your notebook with a concept map.
-- **Made to stick.** Each card links to what you already know, asks you to predict before you see, and comes back once as a single recall question a few days later.
+- **You build the structure.** Before a new topic you sort its key ideas into your own groups and links, then compare with an expert map. Every card takes its place in that map.
+- **Made to stick.** Each card links to what you already know, asks you to predict before you see, and comes back days later as one question about how ideas connect.
 
 See an example card at **https://qaziuzi.github.io/feynmen/**.
 
@@ -30,7 +31,9 @@ See an example card at **https://qaziuzi.github.io/feynmen/**.
   reference/fields.md    suggested order of foundations per field, with sources
   scripts/ld.mjs         saves cards, finds them, schedules recall, builds the notebook
   shared/notebook.html   the notebook page
-  examples/coulomb.md    an example card
+  reference/prime.md     how to run a priming map
+  shared/prime.html      the priming-map visual
+  examples/              an example card and an example priming map
 tools/package.mjs        builds the zip for Claude chat
 ```
 

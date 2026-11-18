@@ -75,6 +75,13 @@ svg .c-blue > rect, svg rect.c-blue, svg .c-blue > circle { fill: #E6F1FB; strok
 svg .c-amber > rect, svg rect.c-amber, svg .c-amber > circle { fill: #FAEEDA; stroke: #854F0B; } svg .c-amber > text { fill: #633806; }
 svg .c-purple > rect, svg rect.c-purple, svg .c-purple > circle { fill: #EEEDFE; stroke: #534AB7; } svg .c-purple > text { fill: #3C3489; }
 .map a:hover rect { stroke-width: 1.5; }
+.mcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; padding-top: 12px; }
+.mcol { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.mg { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.mg div { background: var(--surface-1); border-radius: var(--radius); padding: 8px 10px; font-size: 14px; line-height: 1.5; }
+.mg b { display: block; font-weight: 500; }
+.mcol ul { margin: 0; padding-left: 1.1em; font-size: 14px; color: var(--text-secondary); }
+.legend { font-size: 13px; color: var(--text-secondary); margin: 0; }
 </style>
 
 <main class="nb">
@@ -85,7 +92,9 @@ svg .c-purple > rect, svg rect.c-purple, svg .c-purple > circle { fill: #EEEDFE;
   <section style="display:flex;flex-direction:column;gap:10px">
     <h2>Your concept map</h2>
     <div class="map">%%MAP%%</div>
+    <p class="legend">Boxes are your groups of related ideas. Solid lines show what a card builds on; dashed lines link ideas across groups and fields.</p>
   </section>
+%%MAPS%%
   <section style="display:flex;flex-direction:column;gap:10px">
     <h2>Cards, newest first</h2>
     <div class="cards">

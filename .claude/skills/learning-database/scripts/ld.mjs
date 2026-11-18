@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // Learning Database: the learner's own cards. No dependencies.
-// Data lives in $LEARNING_DB_HOME (default ~/.learning-database): cards/<id>.md, state.json, build/.
+// Data lives in $LEARNING_DB_HOME (default ~/.learning-database): cards/<id>.md, maps/<topic>.json, state.json, build/.
 //
 //   status | list [field] | find <words> | save <card.md> | due | reviewed <id> ok|again
+//   prime <data.json> [--out FILE] | savemap <map.json> | maps
 //   notebook [--out DIR] [--cards DIR] | artifact <url>
 import fs from 'node:fs';
 import os from 'node:os';
@@ -45,7 +46,7 @@ function parseCard(src, file) {
     if (after.trim()) parts.push({ md: after.trim() });
   }
   const list = (v) => (v || '').split(',').map((x) => x.trim()).filter(Boolean);
-  const card = { ...meta, builds_on: list(meta.builds_on), leads_to: list(meta.leads_to), parts, text: parts.filter((p) => p.md).map((p) => p.md).join(String.fromCharCode(10, 10)), widgets: parts.filter((p) => p.w).length };
+  const card = { ...meta, group: meta.group || 'Ungrouped', builds_on: list(meta.builds_on), links: list(meta.links), leads_to: list(meta.leads_to), parts, text: parts.filter((p) => p.md).map((p) => p.md).join(String.fromCharCode(10, 10)), widgets: parts.filter((p) => p.w).length };
   for (const k of ['id', 'title', 'field', 'recall']) if (!card[k]) throw new Error(`${file}: front matter needs "${k}"`);
   if (!/^[a-z0-9][a-z0-9-]*$/.test(card.id)) throw new Error(`${file}: id must be lowercase letters, digits and hyphens`);
   if (!card.widgets) throw new Error(`${file}: no "<!-- widget -->" section`);
@@ -71,24 +72,75 @@ function md(src) {
     return `<p>${inline(b.replace(/\n/g, ' '))}</p>`;
   }).join('\n');
 }
+// Chunk map: each field is a region, each group (front matter "group") a box of cards.
+// Solid lines: "builds on". Dashed accent lines: lateral "links", often across fields.
 function mapSvg(list) {
   if (!list.length) return '';
-  const fields = [...new Set(list.map((c) => c.field))], pos = {}, W = 132, H = 40, PER = 4;
-  let y = 24; const labels = [];
-  for (const f of fields) {
-    const fc = list.filter((c) => c.field === f);
-    labels.push(`<text class="ts" x="20" y="${y + 24}">${esc(f)}</text>`);
-    fc.forEach((c, i) => { pos[c.id] = { x: 130 + (i % PER) * (W + 14), y: y + Math.floor(i / PER) * (H + 18) }; });
-    y += Math.ceil(fc.length / PER) * (H + 18) + 14;
+  const W = 680, COLS = 3, GAP = 12, BW = (W - 40 - GAP * (COLS - 1)) / COLS, RH = 26, pos = {};
+  const regions = [], boxes = [];
+  let y = 8;
+  for (const f of [...new Set(list.map((c) => c.field))]) {
+    const fc = list.filter((c) => c.field === f), groups = [...new Set(fc.map((c) => c.group))];
+    const top = y; y += 30;
+    for (let r = 0; r < groups.length; r += COLS) {
+      const row = groups.slice(r, r + COLS);
+      const rowH = Math.max(...row.map((g) => 34 + fc.filter((c) => c.group === g).length * (RH + 4)));
+      row.forEach((g, i) => {
+        const x = 20 + i * (BW + GAP), members = fc.filter((c) => c.group === g);
+        boxes.push({ x, y, w: BW, h: rowH, name: g, n: members.length });
+        members.forEach((c, k) => { pos[c.id] = { x: x + 8, y: y + 30 + k * (RH + 4), w: BW - 16 }; });
+      });
+      y += rowH + GAP;
+    }
+    regions.push({ y: top, h: y - top, name: f });
+    y += 10;
   }
-  const edges = [];
-  for (const c of list) for (const b of c.builds_on) if (pos[b]) {
-    const a = pos[b], t = pos[c.id];
-    edges.push(`<path d="M${a.x + W / 2} ${a.y + H} C${a.x + W / 2} ${a.y + H + 30} ${t.x + W / 2} ${t.y - 30} ${t.x + W / 2} ${t.y}" fill="none" stroke="var(--text-muted)" stroke-width="1"/>`);
+  const out = [];
+  regions.forEach((r) => out.push(`<rect x="6" y="${r.y}" width="${W - 12}" height="${r.h}" rx="12" style="fill:none;stroke:var(--border-strong);stroke-width:0.5;stroke-dasharray:5 4"/><text class="th" x="20" y="${r.y + 18}" dominant-baseline="central">${esc(r.name)}</text>`));
+  boxes.forEach((b) => out.push(`<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="8" style="fill:var(--surface-1);stroke:var(--border);stroke-width:0.5"/><text class="ts" x="${b.x + 10}" y="${b.y + 15}" dominant-baseline="central">${esc(b.name).slice(0, 28)}</text>`));
+  const curve = (a, t, style) => {
+    const ax = a.x + a.w / 2, ay = a.y + RH / 2, tx = t.x + t.w / 2, ty = t.y + RH / 2;
+    return `<path d="M${ax} ${ay} C${ax} ${(ay + ty) / 2} ${tx} ${(ay + ty) / 2} ${tx} ${ty}" style="fill:none;${style}"/>`;
+  };
+  const drawn = new Set();
+  for (const c of list) {
+    for (const b of c.builds_on) if (pos[b]) out.push(curve(pos[b], pos[c.id], 'stroke:var(--text-muted);stroke-width:1'));
+    for (const l of c.links) {
+      const key = [c.id, l].sort().join('|');
+      if (pos[l] && !drawn.has(key)) { drawn.add(key); out.push(curve(pos[c.id], pos[l], 'stroke:var(--text-accent);stroke-width:1.5;stroke-dasharray:5 4')); }
+    }
   }
-  const nodes = list.map((c) => { const p = pos[c.id], t = c.title.length > 18 ? c.title.slice(0, 17) + '…' : c.title;
-    return `<a href="#${c.id}"><g class="c-teal"><rect x="${p.x}" y="${p.y}" width="${W}" height="${H}" rx="6" stroke-width="0.5"/><text class="t" x="${p.x + W / 2}" y="${p.y + H / 2}" text-anchor="middle" dominant-baseline="central">${esc(t)}</text></g></a>`; });
-  return `<svg width="100%" viewBox="0 0 680 ${y + 10}" role="img"><title>Your concept map</title><desc>Each box is a card; lines show what each card builds on.</desc>${labels.join('')}${edges.join('')}${nodes.join('')}</svg>`;
+  for (const c of list) {
+    const p = pos[c.id], max = Math.floor((p.w - 16) / 7.4), t = c.title.length > max ? c.title.slice(0, max - 1) + '…' : c.title;
+    out.push(`<a href="#${c.id}"><g class="c-teal"><rect x="${p.x}" y="${p.y}" width="${p.w}" height="${RH}" rx="6" stroke-width="0.5"/><text class="t" x="${p.x + 8}" y="${p.y + RH / 2}" dominant-baseline="central" style="font-size:13px">${esc(t)}</text></g></a>`);
+  }
+  return `<svg width="100%" viewBox="0 0 ${W} ${y}" role="img"><title>Your concept map</title><desc>Fields as regions, groups of cards as boxes; solid lines show what a card builds on and dashed lines show links between ideas.</desc>${out.join('')}</svg>`;
+}
+
+// ---- priming maps (the learner's own structure, compared with an expert one) ----
+const mapsDir = opts.maps ? path.resolve(opts.maps) : path.join(home, 'maps');
+function checkPrime(d, file) {
+  if (!d.topic || !Array.isArray(d.terms) || !d.expert || !Array.isArray(d.expert.groups)) throw new Error(`${file}: needs topic, terms[], expert.groups[]`);
+  if (d.terms.length < 6 || d.terms.length > 24) throw new Error(`${file}: use 6 to 24 terms`);
+  if (d.expert.groups.length > 6) throw new Error(`${file}: at most 6 expert groups (the board has 6 boxes)`);
+  const seen = new Set();
+  d.expert.groups.forEach((g) => {
+    if (g.terms.length < 2 || g.terms.length > 4) throw new Error(`${file}: expert group "${g.name}" has ${g.terms.length} terms; use 2 to 4`);
+    g.terms.forEach((t) => { if (!d.terms.includes(t)) throw new Error(`${file}: "${t}" is in an expert group but not in terms`); if (seen.has(t)) throw new Error(`${file}: "${t}" is in two expert groups`); seen.add(t); });
+  });
+  d.terms.forEach((t) => { if (!seen.has(t)) throw new Error(`${file}: term "${t}" is in no expert group`); });
+  (d.expert.links || []).forEach((l) => { if (!d.expert.groups[l[0]] || !d.expert.groups[l[1]] || !l[2]) throw new Error(`${file}: each expert link is [groupIndex, groupIndex, "why"]`); });
+  d.expert.links = d.expert.links || [];
+}
+function mapsHtml() {
+  if (!fs.existsSync(mapsDir)) return '';
+  const maps = fs.readdirSync(mapsDir).filter((f) => f.endsWith('.json')).map((f) => JSON.parse(fs.readFileSync(path.join(mapsDir, f), 'utf8'))).sort((a, b) => (a.date < b.date ? 1 : -1));
+  if (!maps.length) return '';
+  const col = (title, groups, links) => `<div class="mcol"><h3>${title}</h3><div class="mg">${groups.map((g) => `<div><b>${esc(g.name)}</b>${g.terms.map(esc).join(', ')}</div>`).join('')}</div>${links.length ? `<ul>${links.map((l) => `<li>${l.map(esc).join(' ↔ ')}</li>`).join('')}</ul>` : ''}</div>`;
+  return `<section style="display:flex;flex-direction:column;gap:10px"><h2>Your priming maps</h2><p class="sub" style="margin:0">How you structured each topic before learning it, beside the expert structure.</p>${maps.map((m) => {
+    const exLinks = m.expert.links.map((l) => [m.expert.groups[l[0]].name, m.expert.groups[l[1]].name + ': ' + l[2]]);
+    return `<details class="card"><summary><span class="f">${esc(m.field || 'map')}</span><span class="ti">${esc(m.topic)}</span><span class="d">${m.date}</span></summary><div class="cb"><div class="mcols">${col('Your map', m.learner.groups, m.learner.links || [])}${col('Expert map', m.expert.groups, exLinks)}</div>${m.notes ? `<p class="src">${esc(m.notes)}</p>` : ''}</div></details>`;
+  }).join('')}</section>`;
 }
 function notebook() {
   const list = cards(), newest = [...list].reverse();
@@ -106,6 +158,7 @@ ${c.sources ? `<p class="src">Sources: ${esc(c.sources)}</p>` : ''}
   const tpl = fs.readFileSync(path.join(skill, 'shared/notebook.html'), 'utf8');
   return tpl.replace('%%COUNT%%', `${list.length} card${list.length === 1 ? '' : 's'} across ${fields} field${fields === 1 ? '' : 's'}`)
     .replace('%%MAP%%', () => mapSvg(list) || '<p class="empty">Your map grows as you learn. Ask Claude about any concept to add your first card.</p>')
+    .replace('%%MAPS%%', () => mapsHtml())
     .replace('%%CARDS%%', () => body);
 }
 
@@ -120,7 +173,36 @@ function main() {
       console.log(`notebook artifact: ${state.notebook || '(none yet)'}\ndue for recall: ${due.length}`);
       break;
     }
-    case 'list': { cards().filter((c) => !args[0] || c.field === args[0]).forEach((c) => console.log(line(c))); break; }
+    case 'list': {
+      cards().filter((c) => !args[0] || c.field === args[0]).forEach((c) => console.log(line(c) + `  [group: ${c.group}]${c.links.length ? '  links: ' + c.links.join(', ') : ''}`));
+      break;
+    }
+    case 'prime': {
+      const file = path.resolve(args[0] || '');
+      const d = JSON.parse(fs.readFileSync(file, 'utf8'));
+      checkPrime(d, file);
+      const data = JSON.stringify({ topic: d.topic, terms: d.terms, expert: d.expert }).replace(/</g, '\\u003c');
+      const widget = fs.readFileSync(path.join(skill, 'shared/prime.html'), 'utf8').replace('/*DATA*/', () => data);
+      if (opts.out) { fs.writeFileSync(path.resolve(opts.out), widget); console.log('Wrote ' + path.resolve(opts.out)); } else process.stdout.write(widget);
+      break;
+    }
+    case 'savemap': {
+      const file = path.resolve(args[0] || '');
+      const d = JSON.parse(fs.readFileSync(file, 'utf8'));
+      checkPrime(d, file);
+      if (!d.learner || !Array.isArray(d.learner.groups)) throw new Error(`${file}: needs learner.groups[] ({name, terms}) and optional learner.links[] ([name, name])`);
+      d.date = d.date || today();
+      const slug = d.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      fs.mkdirSync(mapsDir, { recursive: true });
+      fs.writeFileSync(path.join(mapsDir, slug + '.json'), JSON.stringify(d, null, 2) + '\n');
+      console.log(`Saved map: ${d.topic}`);
+      break;
+    }
+    case 'maps': {
+      if (!fs.existsSync(mapsDir)) { console.log('No maps yet.'); break; }
+      fs.readdirSync(mapsDir).filter((f) => f.endsWith('.json')).forEach((f) => { const m = JSON.parse(fs.readFileSync(path.join(mapsDir, f), 'utf8')); console.log(`${m.date}  ${m.topic}  (${m.learner.groups.length} groups)`); });
+      break;
+    }
     case 'find': {
       const words = args.join(' ').toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2);
       const hits = cards().map((c) => { const hay = (c.title + ' ' + c.id + ' ' + c.text).toLowerCase(); return { c, s: words.filter((w) => hay.includes(w)).length + words.filter((w) => c.title.toLowerCase().includes(w)).length * 2 }; })
@@ -170,7 +252,7 @@ function main() {
       break;
     }
     default:
-      console.log('Commands: status | list [field] | find <words> | save <card.md> | due | reviewed <id> ok|again | notebook [--out DIR] [--cards DIR] | artifact <url>');
+      console.log('Commands: status | list [field] | find <words> | save <card.md> | due | reviewed <id> ok|again | prime <data.json> [--out FILE] | savemap <map.json> | maps | notebook [--out DIR] [--cards DIR] | artifact <url>');
       if (cmd) process.exit(1);
   }
 }

@@ -2,10 +2,12 @@
 id: coulomb
 title: Coulomb's law and superposition
 field: electronics
+group: Charges and forces
 builds_on:
+links:
 leads_to: electric-field, gauss-law
-recall: Two charges are moved three times farther apart, and one of them is doubled. What happens to the force?
-answer: It becomes 2/9 of what it was: three times farther divides it by 9, double charge multiplies it by 2.
+recall: Coulomb's law and Newton's gravity are both inverse-square laws. Why does gravity, about 10³⁹ times weaker, still shape planets and galaxies, and what would change if matter carried a one percent charge imbalance?
+answer: Matter is almost perfectly neutral, so electric pushes and pulls cancel over large bodies while mass, having one sign, always adds. With a one percent imbalance the electric repulsion would overwhelm gravity by a huge margin: two people at arm's length would repel with a force comparable to the Earth's weight, and no planet or star could hold together.
 sources: Feynman Lectures Vol. II §1-1, §4-2 (§4-2 checked online); Purcell & Morin, Electricity and Magnetism, ch. 1; Griffiths §2.1; MIT OCW 8.02 ch. 2; NIST CODATA 2022 (e, ε₀)
 ---
 **The question.** Rub a balloon on your hair and the hair rises toward it across empty air. Two objects that are not touching push or pull on each other. What exactly is that force: how does it depend on how much charge each carries, on the distance between them, and on direction? And when there are many charges, how do their forces combine?
